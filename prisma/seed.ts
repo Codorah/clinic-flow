@@ -34,7 +34,7 @@ async function main() {
     });
   }
 
-  // 3. Create Workstations with PINs
+  // 3. Create Workstations with secure hashed PINs
   const workstations = [
     { id: 'reception', label: 'Réception', pin: '1111' },
     { id: 'doctor', label: 'Consultation', pin: '2222' },
@@ -47,19 +47,20 @@ async function main() {
   ];
 
   for (const ws of workstations) {
+    const hashedPin = await bcrypt.hash(ws.pin, 10);
     await prisma.user.upsert({
       where: { username: ws.id },
-      update: { pin: ws.pin, displayName: ws.label, role: ws.id },
+      update: { pin: hashedPin, displayName: ws.label, role: ws.id },
       create: {
         username: ws.id,
-        pin: ws.pin,
+        pin: hashedPin,
         displayName: ws.label,
         role: ws.id,
       },
     });
   }
 
-  // 4. Create Treatments Catalog (French)
+  // 4. Create Treatments Catalog (French) - Idempotent
   const catalog = [
     { name: 'Consultation Générale', price: 50, category: 'Général' },
     { name: 'Test Sanguin (NFS)', price: 120, category: 'Lab' },
@@ -70,19 +71,25 @@ async function main() {
     { name: 'Hospitalisation (Jour)', price: 450, category: 'Salles' },
   ];
 
-  for (const item of catalog) {
-    await prisma.catalogItem.create({ data: item });
+  const existingCatalog = await prisma.catalogItem.count();
+  if (existingCatalog === 0) {
+    for (const item of catalog) {
+      await prisma.catalogItem.create({ data: item });
+    }
   }
 
-  // 5. Create Dummy Patients
+  // 5. Create Dummy Patients - Idempotent
   const patients = [
     { firstName: 'Jean', lastName: 'Dupont', phone: '0102030405', status: 'DISCHARGED', birthDate: new Date('1985-05-12') },
     { firstName: 'Marie', lastName: 'Curie', phone: '0607080910', status: 'NURSE_QUEUE', birthDate: new Date('1992-11-20') },
     { firstName: 'Paul', lastName: 'Valery', phone: '0708091011', status: 'RECEPTION', birthDate: new Date('1970-01-15') },
   ];
 
-  for (const p of patients) {
-    await prisma.patient.create({ data: p });
+  const existingPatients = await prisma.patient.count();
+  if (existingPatients === 0) {
+    for (const p of patients) {
+      await prisma.patient.create({ data: p });
+    }
   }
 
   console.log("Seeding completed: Clinic of Grace is ready.");

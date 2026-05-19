@@ -3,7 +3,7 @@ services:
     name: clinic-flow-web
     env: node
     plan: free
-    buildCommand: node scripts/prepare-postgres.js && npm install --include=dev && npx prisma generate && npm run build && npx prisma db push --accept-data-loss && npx prisma db seed
+    buildCommand: node scripts/prepare-postgres.js && npm install --include=dev && npx prisma generate && npm run build && npx prisma db push && npx prisma db seed
     startCommand: npm run start
     envVars:
       - key: DATABASE_URL

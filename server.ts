@@ -43,16 +43,22 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT || 3000;
 
-  app.use(cors());
+  const corsOrigin = process.env.APP_URL || "*";
+  app.use(cors({ origin: corsOrigin }));
   app.use(express.json());
 
   // --- PUBLIC ROUTES (no auth required) ---
 
-  // Hospital Info — used on login page before auth
-  app.get("/api/hospital", asyncHandler(async (req: any, res: any) => {
-    const hospital = await prisma.hospital.findUnique({ where: { id: 1 } });
-    res.json(hospital || { name: "Clinique de la Grâce" });
-  }));
+  // Hospital Info — used on login page before auth (resilient fallback)
+  app.get("/api/hospital", async (req: any, res: any) => {
+    try {
+      const hospital = await prisma.hospital.findUnique({ where: { id: 1 } });
+      res.json(hospital || { name: "Clinique de la Grâce" });
+    } catch (e) {
+      console.error("Database connection failed for hospital route:", e);
+      res.json({ name: "Clinique de la Grâce" });
+    }
+  });
 
   // Auth: Admin Password Login
   app.post("/api/auth/admin-login", asyncHandler(async (req: any, res: any) => {
@@ -69,11 +75,15 @@ async function startServer() {
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, displayName: user.displayName } });
   }));
 
-  // Auth: Workstation PIN Login
+  // Auth: Workstation PIN Login (Secure bcrypt check)
   app.post("/api/auth/pin-login", asyncHandler(async (req: any, res: any) => {
     const { username, pin } = req.body;
     const user = await prisma.user.findUnique({ where: { username } });
-    if (!user || user.pin !== pin) {
+    if (!user || !user.pin) {
+      return res.status(401).json({ error: "Invalid PIN" });
+    }
+    const isValid = await bcrypt.compare(pin, user.pin);
+    if (!isValid) {
       return res.status(401).json({ error: "Invalid PIN" });
     }
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "8h" });
@@ -107,9 +117,12 @@ async function startServer() {
 
   app.post("/api/users", authenticate, requireAdmin, asyncHandler(async (req: any, res: any) => {
     const { username, pin, role, displayName, email, password } = req.body;
-    const data: any = { username, pin, role, displayName, email };
+    const data: any = { username, role, displayName, email };
     if (password) {
       data.password = await bcrypt.hash(password, 10);
+    }
+    if (pin) {
+      data.pin = await bcrypt.hash(pin, 10);
     }
     const user = await prisma.user.create({ data });
     res.json(user);
