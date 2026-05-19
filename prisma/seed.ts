@@ -4,17 +4,6 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  // FIX — Vérification AVANT de seeder : si l'admin existe déjà, on ne recrée rien
-  // Cela évite l'erreur "Unique constraint failed" et protège les données existantes
-  const existingAdmin = await prisma.user.findUnique({
-    where: { email: "ceo.codorah@gmail.com" },
-  });
-
-  if (existingAdmin) {
-    console.log("✅ Base de données déjà initialisée — seed ignoré.");
-    return;
-  }
-
   console.log("🌱 Initialisation de la base de données...");
 
   // Hôpital
@@ -26,8 +15,14 @@ async function main() {
 
   // Compte Admin
   const hashedPassword = await bcrypt.hash("admin123", 10);
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: { email: "ceo.codorah@gmail.com" },
+    update: {
+      password: hashedPassword,
+      role: "admin",
+      displayName: "Administrateur",
+    },
+    create: {
       email: "ceo.codorah@gmail.com",
       password: hashedPassword,
       role: "admin",
@@ -48,7 +43,15 @@ async function main() {
   ];
 
   for (const ws of workstations) {
-    await prisma.user.create({ data: ws });
+    await prisma.user.upsert({
+      where: { username: ws.username },
+      update: {
+        pin: ws.pin,
+        role: ws.role,
+        displayName: ws.displayName,
+      },
+      create: ws,
+    });
   }
 
   console.log("✅ Seed terminé avec succès !");
