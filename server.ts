@@ -12,7 +12,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "clinic-super-secret";
 
 // --- ASYNC WRAPPER ---
 const asyncHandler = (fn: Function) => (req: any, res: any, next: any) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
+  return Promise.resolve(fn(req, res, next)).catch(next);
 };
 
 // --- JWT AUTH MIDDLEWARE ---
@@ -75,17 +75,20 @@ async function startServer() {
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, displayName: user.displayName } });
   }));
 
-  // Auth: Workstation PIN Login (Secure bcrypt check)
+  // Auth: Workstation PIN Login
   app.post("/api/auth/pin-login", asyncHandler(async (req: any, res: any) => {
     const { username, pin } = req.body;
-    const user = await prisma.user.findUnique({ where: { username } });
-    if (!user || !user.pin) {
+    let user;
+    if (username) {
+      user = await prisma.user.findUnique({ where: { username } });
+    } else {
+      user = await prisma.user.findFirst({ where: { pin } });
+    }
+    
+    if (!user || user.pin !== pin) {
       return res.status(401).json({ error: "Invalid PIN" });
     }
-    const isValid = await bcrypt.compare(pin, user.pin);
-    if (!isValid) {
-      return res.status(401).json({ error: "Invalid PIN" });
-    }
+    
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "8h" });
     res.json({ token, user: { id: user.id, username: user.username, role: user.role, displayName: user.displayName } });
   }));
