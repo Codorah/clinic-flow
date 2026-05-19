@@ -13,6 +13,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateHospitalName: (name: string) => Promise<void>;
   setWorkstation: (role: UserRole) => void;
+  apiFetch: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,21 +22,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<any>(null);
   const [role, setLocalRole] = useState<UserRole | null>(null);
   const [activeWorkstation, setActiveWorkstation] = useState<UserRole | null>(null);
-  const [hospitalName, setHospitalName] = useState('Central Medical Center');
+  const [hospitalName, setHospitalName] = useState('Clinique de la Grâce');
   const [loading, setLoading] = useState(true);
+
+  // Helper: authenticated fetch that auto-injects the Bearer token
+  const apiFetch = (url: string, options: RequestInit = {}): Promise<Response> => {
+    const token = localStorage.getItem('clinic_auth_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string> || {}),
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return fetch(url, { ...options, headers });
+  };
 
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Fetch Hospital Settings
+        // /api/hospital is public — no auth needed
         const res = await fetch('/api/hospital');
-        const hospitalData = await res.json();
-        setHospitalName(hospitalData.name || 'Central Medical Center');
+        if (res.ok) {
+          const hospitalData = await res.json();
+          setHospitalName(hospitalData.name || 'Clinique de la Grâce');
+        }
 
-        // Check for Session
+        // Restore session from localStorage
         const token = localStorage.getItem('clinic_auth_token');
         const savedUser = localStorage.getItem('clinic_user');
-        
+
         if (token && savedUser) {
           const userData = JSON.parse(savedUser);
           setUser(userData);
@@ -58,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    
+
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.error || "Login failed");
@@ -105,16 +121,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateHospitalName = async (name: string) => {
-    await fetch('/api/hospital', {
+    await apiFetch('/api/hospital', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name })
     });
     setHospitalName(name);
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, activeWorkstation, loading, hospitalName, loginWithEmail, loginWithPin, logout, updateHospitalName, setWorkstation }}>
+    <AuthContext.Provider value={{ user, role, activeWorkstation, loading, hospitalName, loginWithEmail, loginWithPin, logout, updateHospitalName, setWorkstation, apiFetch }}>
       {children}
     </AuthContext.Provider>
   );
