@@ -3,7 +3,7 @@ import { useAuth } from '../../store/AuthContext';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { UserPlus, Users, ArrowRight, Activity, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { UserPlus, Users, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FlowGuide } from '../FlowGuide';
 
@@ -18,6 +18,7 @@ interface Patient {
 }
 
 export const ReceptionDashboard: React.FC = () => {
+  const { apiFetch } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [age, setAge] = useState('');
@@ -29,9 +30,8 @@ export const ReceptionDashboard: React.FC = () => {
 
   const fetchQueue = async () => {
     try {
-      const res = await fetch('/api/patients');
+      const res = await apiFetch('/api/patients');
       const data = await res.json();
-      // Filter for patients in reception queue
       setPatients(data.filter((p: any) => p.status === 'RECEPTION'));
     } catch (e) {
       console.error(e);
@@ -42,7 +42,7 @@ export const ReceptionDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchQueue();
-    const interval = setInterval(fetchQueue, 5000); // Poll every 5s
+    const interval = setInterval(fetchQueue, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -50,17 +50,9 @@ export const ReceptionDashboard: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await fetch('/api/patients', {
+      await apiFetch('/api/patients', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          age: parseInt(age),
-          phone,
-          emergencyContact: emergency,
-          status: 'RECEPTION'
-        })
+        body: JSON.stringify({ firstName, lastName, age: parseInt(age), phone, emergencyContact: emergency, status: 'RECEPTION' })
       });
       setFirstName(''); setLastName(''); setAge(''); setPhone(''); setEmergency('');
       fetchQueue();
@@ -73,10 +65,8 @@ export const ReceptionDashboard: React.FC = () => {
 
   const sendToNurse = async (id: string) => {
     try {
-      // We need a PUT endpoint to update patient status in server.ts
-      await fetch(`/api/patients/${id}`, {
+      await apiFetch(`/api/patients/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'NURSE_QUEUE' })
       });
       fetchQueue();
@@ -89,105 +79,54 @@ export const ReceptionDashboard: React.FC = () => {
     <div className="space-y-6">
       <FlowGuide currentStepId="reception" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Registration Form */}
-      <motion.div 
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm"
-      >
-        <div className="flex items-center gap-3 mb-8 text-emerald-700">
-          <UserPlus size={24} />
-          <h3 className="text-xl font-bold">Enregistrement Nouveau Patient</h3>
-        </div>
-        
-        <form onSubmit={handleRegister} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Prénom</Label>
-              <Input value={firstName} onChange={e => setFirstName(e.target.value)} required placeholder="Prénom" className="rounded-xl h-12" />
-            </div>
-            <div className="space-y-2">
-              <Label>Nom de Famille</Label>
-              <Input value={lastName} onChange={e => setLastName(e.target.value)} required placeholder="Nom" className="rounded-xl h-12" />
-            </div>
-            <div className="space-y-2">
-              <Label>Âge</Label>
-              <Input type="number" value={age} onChange={e => setAge(e.target.value)} required placeholder="Ex: 25" className="rounded-xl h-12" />
-            </div>
-            <div className="space-y-2">
-              <Label>Numéro de Téléphone</Label>
-              <Input value={phone} onChange={e => setPhone(e.target.value)} required placeholder="06.." className="rounded-xl h-12" />
-            </div>
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3 mb-8 text-emerald-700">
+            <UserPlus size={24} />
+            <h3 className="text-xl font-bold">Enregistrement Nouveau Patient</h3>
           </div>
-          
-          <div className="space-y-2">
-            <Label>Contact d'Urgence</Label>
-            <Input value={emergency} onChange={e => setEmergency(e.target.value)} required placeholder="Nom & Tel" className="rounded-xl h-12" />
-          </div>
-          
-          <Button 
-            type="submit" 
-            disabled={isSubmitting}
-            className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-lg font-bold shadow-lg shadow-emerald-100 transition-all active:scale-95"
-          >
-            {isSubmitting ? "Enregistrement..." : "Terminer l'Enregistrement"}
-          </Button>
-        </form>
-      </motion.div>
+          <form onSubmit={handleRegister} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Prénom</Label><Input value={firstName} onChange={e => setFirstName(e.target.value)} required placeholder="Prénom" className="rounded-xl h-12" /></div>
+              <div className="space-y-2"><Label>Nom de Famille</Label><Input value={lastName} onChange={e => setLastName(e.target.value)} required placeholder="Nom" className="rounded-xl h-12" /></div>
+              <div className="space-y-2"><Label>Âge</Label><Input type="number" value={age} onChange={e => setAge(e.target.value)} required placeholder="Ex: 25" className="rounded-xl h-12" /></div>
+              <div className="space-y-2"><Label>Numéro de Téléphone</Label><Input value={phone} onChange={e => setPhone(e.target.value)} required placeholder="06.." className="rounded-xl h-12" /></div>
+            </div>
+            <div className="space-y-2"><Label>Contact d'Urgence</Label><Input value={emergency} onChange={e => setEmergency(e.target.value)} required placeholder="Nom & Tel" className="rounded-xl h-12" /></div>
+            <Button type="submit" disabled={isSubmitting} className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-lg font-bold shadow-lg shadow-emerald-100 transition-all active:scale-95">
+              {isSubmitting ? "Enregistrement..." : "Terminer l'Enregistrement"}
+            </Button>
+          </form>
+        </motion.div>
 
-      {/* Reception Queue */}
-      <motion.div 
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="bg-slate-50 p-8 rounded-3xl border border-slate-200"
-      >
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3 text-slate-700">
-            <Users size={24} />
-            <h3 className="text-xl font-bold">File d'Enregistrement</h3>
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-slate-50 p-8 rounded-3xl border border-slate-200">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3 text-slate-700"><Users size={24} /><h3 className="text-xl font-bold">File d'Enregistrement</h3></div>
+            <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full">{patients.length} En attente</span>
           </div>
-          <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full">
-            {patients.length} En attente
-          </span>
-        </div>
-
-        <div className="space-y-4">
-          <AnimatePresence>
-            {patients.map(p => (
-              <motion.div 
-                key={p.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: 50 }}
-                className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between group hover:border-emerald-200 transition-all shadow-sm"
-              >
-                <div>
-                  <h4 className="font-bold text-slate-800">{p.firstName} {p.lastName}</h4>
-                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                    <Clock size={12} /> Registered at {new Date(p.createdAt).toLocaleTimeString()}
-                  </p>
-                </div>
-                <Button 
-                  onClick={() => sendToNurse(p.id)}
-                  variant="outline" 
-                  className="rounded-xl group-hover:bg-emerald-50 group-hover:text-emerald-700 group-hover:border-emerald-200"
-                >
-                  <span className="mr-2 font-bold text-xs uppercase tracking-wider">Envoyer à l'Infirmier(e)</span>
-                  <ArrowRight size={16} />
-                </Button>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          {patients.length === 0 && (
-            <div className="text-center py-12 text-slate-400">
-              <div className="size-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 border border-slate-200">
-                <CheckCircle2 size={32} />
+          <div className="space-y-4">
+            <AnimatePresence>
+              {patients.map(p => (
+                <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 50 }}
+                  className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between group hover:border-emerald-200 transition-all shadow-sm">
+                  <div>
+                    <h4 className="font-bold text-slate-800">{p.firstName} {p.lastName}</h4>
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1"><Clock size={12} /> Enregistré à {new Date(p.createdAt).toLocaleTimeString()}</p>
+                  </div>
+                  <Button onClick={() => sendToNurse(p.id)} variant="outline" className="rounded-xl group-hover:bg-emerald-50 group-hover:text-emerald-700 group-hover:border-emerald-200">
+                    <span className="mr-2 font-bold text-xs uppercase tracking-wider">Envoyer à l'Infirmier(e)</span>
+                    <ArrowRight size={16} />
+                  </Button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {patients.length === 0 && (
+              <div className="text-center py-12 text-slate-400">
+                <div className="size-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 border border-slate-200"><CheckCircle2 size={32} /></div>
+                <p className="font-medium italic">File d'attente vide</p>
               </div>
-              <p className="font-medium italic">File d'attente vide</p>
-            </div>
-          )}
-        </div>
-      </motion.div>
+            )}
+          </div>
+        </motion.div>
       </div>
     </div>
   );

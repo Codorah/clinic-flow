@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../store/AuthContext';
 import { 
   Activity, 
   Users, 
@@ -23,6 +24,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 export const AdminDashboard: React.FC = () => {
+  const { apiFetch, updateHospitalName } = useAuth();
   const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'settings'>('analytics');
   const [stats, setStats] = useState({
     totalPatients: 0,
@@ -32,9 +34,7 @@ export const AdminDashboard: React.FC = () => {
   });
   const [usersList, setUsersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
   const [editingHospitalName, setEditingHospitalName] = useState('');
-  const [provisioning, setProvisioning] = useState(false);
 
   // User Form State
   const [newUsername, setNewUsername] = useState('');
@@ -45,18 +45,15 @@ export const AdminDashboard: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const statsRes = await fetch('/api/stats');
-      const statsData = await statsRes.json();
-      setStats(statsData);
-
-      const usersRes = await fetch('/api/users');
-      const usersData = await usersRes.json();
-      setUsersList(usersData);
-
-      const hospitalRes = await fetch('/api/hospital');
+      const [statsRes, usersRes, hospitalRes] = await Promise.all([
+        apiFetch('/api/stats'),
+        apiFetch('/api/users'),
+        apiFetch('/api/hospital'),
+      ]);
+      setStats(await statsRes.json());
+      setUsersList(await usersRes.json());
       const hospitalData = await hospitalRes.json();
       setEditingHospitalName(hospitalData.name);
-
       setLoading(false);
     } catch (e) {
       console.error(e);
@@ -69,12 +66,8 @@ export const AdminDashboard: React.FC = () => {
 
   const handleUpdateHospital = async () => {
     try {
-      await fetch('/api/hospital', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editingHospitalName })
-      });
-      alert("Hospital profiling updated!");
+      await updateHospitalName(editingHospitalName);
+      alert("Établissement mis à jour !");
     } catch (e) {
       console.error(e);
     }
@@ -83,22 +76,20 @@ export const AdminDashboard: React.FC = () => {
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('/api/users', {
+      await apiFetch('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: newUsername || undefined,
           email: newEmail || undefined,
           password: newPassword || undefined,
           pin: newPin || undefined,
           role: newRole,
-          displayName: newUsername ? (newUsername.charAt(0).toUpperCase() + newUsername.slice(1)) : (newEmail ? newEmail.split('@')[0] : 'Staff')
+          displayName: newUsername
+            ? newUsername.charAt(0).toUpperCase() + newUsername.slice(1)
+            : newEmail ? newEmail.split('@')[0] : 'Staff'
         })
       });
-      setNewUsername('');
-      setNewPin('');
-      setNewEmail('');
-      setNewPassword('');
+      setNewUsername(''); setNewPin(''); setNewEmail(''); setNewPassword('');
       fetchData();
     } catch (e) {
       console.error(e);
@@ -106,16 +97,16 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const deleteUser = async (id: string, email?: string) => {
-    if (email === 'ceo.codorah@gmail.com') return alert("Cannot delete main admin!");
+    if (email === 'ceo.codorah@gmail.com') return alert("Impossible de supprimer le compte principal !");
     try {
-      await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
       fetchData();
     } catch (e) {
       console.error(e);
     }
   };
 
-  if (loading) return <div>Loading Analytics...</div>;
+  if (loading) return <div>Chargement des analyses...</div>;
 
   return (
     <div className="space-y-8 pb-12">
@@ -131,7 +122,7 @@ export const AdminDashboard: React.FC = () => {
             { id: 'users', label: 'Personnel' },
             { id: 'settings', label: 'Paramètres' }
           ].map((tab) => (
-            <button 
+            <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all capitalize ${activeTab === tab.id ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -159,9 +150,7 @@ export const AdminDashboard: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <motion.div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-8">
-                <BarChart3 className="text-emerald-600" /> Performance Services
-              </h3>
+              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-8"><BarChart3 className="text-emerald-600" /> Performance Services</h3>
               <div className="space-y-6">
                 <BarItem label="Consultations" progress={85} color="bg-emerald-500" count={124} />
                 <BarItem label="Laboratoire" progress={62} color="bg-blue-500" count={89} />
@@ -171,9 +160,7 @@ export const AdminDashboard: React.FC = () => {
             </motion.div>
 
             <motion.div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-8">
-                <PieChart className="text-emerald-600" /> Prévalence Maladies
-              </h3>
+              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-8"><PieChart className="text-emerald-600" /> Prévalence Maladies</h3>
               <div className="space-y-6">
                 <BarItem label="Paludisme" progress={45} color="bg-red-500" count={156} />
                 <BarItem label="Typhoïde" progress={25} color="bg-orange-500" count={86} />
@@ -184,9 +171,7 @@ export const AdminDashboard: React.FC = () => {
 
             <motion.div className="lg:col-span-1 bg-slate-900 p-8 rounded-[2.5rem] border border-slate-800 shadow-2xl relative overflow-hidden text-white">
               <div className="relative">
-                <h3 className="text-xl font-bold flex items-center gap-2 mb-8 border-b border-white/10 pb-6">
-                  <PieChart className="text-emerald-400" /> Alertes Opérationnelles
-                </h3>
+                <h3 className="text-xl font-bold flex items-center gap-2 mb-8 border-b border-white/10 pb-6"><PieChart className="text-emerald-400" /> Alertes Opérationnelles</h3>
                 <div className="space-y-4">
                   <LogItem icon={<AlertTriangle className="text-amber-400" />} title="Base de Données" desc="Moteur Prisma optimisé avec succès." time="En direct" />
                   <LogItem icon={<CheckCircle2 className="text-emerald-400" />} title="Postes Actifs" desc="Tous les terminaux sont en ligne." time="maintenant" />
@@ -242,7 +227,7 @@ export const AdminDashboard: React.FC = () => {
                       <div className="text-right">
                         <div className="flex items-center gap-1 text-slate-400 text-[10px] font-bold"><Key size={8} /> PIN: {usr.pin || 'Chiffré'}</div>
                       </div>
-                      <button onClick={() => deleteUser(usr.id)} className="size-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"><Trash2 size={18} /></button>
+                      <button onClick={() => deleteUser(usr.id, usr.email)} className="size-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"><Trash2 size={18} /></button>
                     </div>
                   </div>
                 ))}
