@@ -3,23 +3,10 @@ services:
     name: clinic-flow-web
     env: node
     plan: free
-    # FIX #2 — esbuild maintenant dans devDependencies donc --include=dev est OK
-    # FIX #3 — Suppression de --accept-data-loss qui effaçait les données à chaque déploiement
-    #           Le seed est protégé par une vérification "si admin existe déjà → skip"
-    buildCommand: node scripts/prepare-postgres.js && npm install --include=dev && npx prisma generate && npm run build && npx prisma db push && npx prisma db seed
+    buildCommand: npm install --include=dev && npx prisma generate && npm run build && npx prisma db push && npx prisma db seed
     startCommand: npm run start
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: clinic-flow-db
-          property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: NODE_ENV
         value: production
-
-databases:
-  - name: clinic-flow-db
-    plan: free
-    databaseName: clinic_flow
-    user: clinic_admin
