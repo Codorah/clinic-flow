@@ -17,63 +17,60 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
+  // --- ASYNC WRAPPER FOR ROBUST ERROR HANDLING ---
+  const asyncHandler = (fn: Function) => (req: any, res: any, next: any) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+
   // --- API ROUTES ---
 
   // Auth: Admin Password Login
-  app.post("/api/auth/admin-login", async (req, res) => {
+  app.post("/api/auth/admin-login", asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    try {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user || user.role !== "admin") {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      
-      const isValid = await bcrypt.compare(password, user.password || "");
-      if (!isValid) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-
-      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET);
-      res.json({ token, user: { id: user.id, email: user.email, role: user.role, displayName: user.displayName } });
-    } catch (e) {
-      res.status(500).json({ error: "Internal server error" });
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || user.role !== "admin") {
+      return res.status(401).json({ error: "Unauthorized" });
     }
-  });
+    
+    const isValid = await bcrypt.compare(password, user.password || "");
+    if (!isValid) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET);
+    res.json({ token, user: { id: user.id, email: user.email, role: user.role, displayName: user.displayName } });
+  }));
 
   // Auth: Workstation PIN Login
-  app.post("/api/auth/pin-login", async (req, res) => {
+  app.post("/api/auth/pin-login", asyncHandler(async (req, res) => {
     const { username, pin } = req.body;
-    try {
-      const user = await prisma.user.findUnique({ where: { username } });
-      if (!user || user.pin !== pin) {
-        return res.status(401).json({ error: "Invalid PIN" });
-      }
-
-      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET);
-      res.json({ token, user: { id: user.id, username: user.username, role: user.role, displayName: user.displayName } });
-    } catch (e) {
-      res.status(500).json({ error: "Internal server error" });
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user || user.pin !== pin) {
+      return res.status(401).json({ error: "Invalid PIN" });
     }
-  });
+
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET);
+    res.json({ token, user: { id: user.id, username: user.username, role: user.role, displayName: user.displayName } });
+  }));
 
   // Hospital Info
-  app.get("/api/hospital", async (req, res) => {
+  app.get("/api/hospital", asyncHandler(async (req, res) => {
     const hospital = await prisma.hospital.findUnique({ where: { id: 1 } });
     res.json(hospital || { name: "Clinic of Grace" });
-  });
+  }));
 
   // Update Hospital Info
-  app.put("/api/hospital", async (req, res) => {
+  app.put("/api/hospital", asyncHandler(async (req, res) => {
     const { name } = req.body;
     const hospital = await prisma.hospital.update({
       where: { id: 1 },
       data: { name }
     });
     res.json(hospital);
-  });
+  }));
 
   // Stats for Admin
-  app.get("/api/stats", async (req, res) => {
+  app.get("/api/stats", asyncHandler(async (req, res) => {
     const totalPatients = await prisma.patient.count();
     const treatments = await prisma.treatment.count();
     const invoices = await prisma.invoice.findMany({ where: { status: 'paid' } });
@@ -86,17 +83,17 @@ async function startServer() {
       activeTreatments: treatments,
       pendingInvoices
     });
-  });
+  }));
 
   // Users Management
-  app.get("/api/users", async (req, res) => {
+  app.get("/api/users", asyncHandler(async (req, res) => {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' }
     });
     res.json(users);
-  });
+  }));
 
-  app.post("/api/users", async (req, res) => {
+  app.post("/api/users", asyncHandler(async (req, res) => {
     const { username, pin, role, displayName, email, password } = req.body;
     const data: any = { username, pin, role, displayName, email };
     if (password) {
@@ -104,65 +101,71 @@ async function startServer() {
     }
     const user = await prisma.user.create({ data });
     res.json(user);
-  });
+  }));
 
-  app.delete("/api/users/:id", async (req, res) => {
+  app.delete("/api/users/:id", asyncHandler(async (req, res) => {
     await prisma.user.delete({ where: { id: req.params.id } });
     res.json({ success: true });
-  });
+  }));
 
   // Patients/Treatments/Invoices...
   // (Adding basic routes to make dashboards functional)
 
-  app.get("/api/catalog", async (req, res) => {
+  app.get("/api/catalog", asyncHandler(async (req, res) => {
     const items = await prisma.catalogItem.findMany();
     res.json(items);
-  });
+  }));
 
-  app.get("/api/patients", async (req, res) => {
+  app.get("/api/patients", asyncHandler(async (req, res) => {
     const patients = await prisma.patient.findMany({ include: { treatments: true, invoices: true }, orderBy: { createdAt: 'desc' } });
     res.json(patients);
-  });
+  }));
 
-  app.post("/api/patients", async (req, res) => {
+  app.post("/api/patients", asyncHandler(async (req, res) => {
     const patient = await prisma.patient.create({ data: req.body });
     res.json(patient);
-  });
+  }));
 
-  app.put("/api/patients/:id", async (req, res) => {
+  app.put("/api/patients/:id", asyncHandler(async (req, res) => {
     const patient = await prisma.patient.update({
       where: { id: req.params.id },
       data: req.body
     });
     res.json(patient);
-  });
+  }));
 
-  app.post("/api/treatments", async (req, res) => {
+  app.post("/api/treatments", asyncHandler(async (req, res) => {
     const treatment = await prisma.treatment.create({ data: req.body });
     res.json(treatment);
-  });
+  }));
 
-  app.get("/api/treatments", async (req, res) => {
+  app.get("/api/treatments", asyncHandler(async (req, res) => {
     const treatments = await prisma.treatment.findMany({ include: { patient: true }, orderBy: { createdAt: 'desc' } });
     res.json(treatments);
-  });
+  }));
 
-  app.post("/api/invoices", async (req, res) => {
+  app.post("/api/invoices", asyncHandler(async (req, res) => {
     const invoice = await prisma.invoice.create({ data: req.body });
     res.json(invoice);
-  });
+  }));
 
-  app.get("/api/invoices", async (req, res) => {
+  app.get("/api/invoices", asyncHandler(async (req, res) => {
     const invoices = await prisma.invoice.findMany({ include: { patient: true }, orderBy: { createdAt: 'desc' } });
     res.json(invoices);
-  });
+  }));
 
-  app.put("/api/invoices/:id", async (req, res) => {
+  app.put("/api/invoices/:id", asyncHandler(async (req, res) => {
     const invoice = await prisma.invoice.update({
       where: { id: req.params.id },
       data: req.body
     });
     res.json(invoice);
+  }));
+
+  // --- GLOBAL ERROR HANDLER ---
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error("Database or API Connection Error:", err);
+    res.status(500).json({ error: "Database error or service unavailable. Check connection strings." });
   });
 
   // Vite middleware for development

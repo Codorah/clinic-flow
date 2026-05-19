@@ -11,21 +11,28 @@ async function main() {
     create: { id: 1, name: "Clinique de la Grâce" },
   });
 
-  // 2. Create Admin User
-  const adminEmail = "ceo.codorah@gmail.com";
+  // 2. Create Admin Users
   const adminPassword = await bcrypt.hash("admin123", 10);
   
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: { password: adminPassword },
-    create: {
-      email: adminEmail,
-      username: "admin",
-      password: adminPassword,
-      displayName: "Administrateur",
-      role: "admin",
-    },
-  });
+  const admins = [
+    { email: "ceo.codorah@gmail.com", username: "admin", displayName: "Administrateur CEO" },
+    { email: "admin@codorah.com", username: "admin_general", displayName: "Administrateur Général" },
+    { email: "test.admin@codorah.com", username: "admin_test", displayName: "Administrateur de Test" },
+  ];
+
+  for (const adm of admins) {
+    await prisma.user.upsert({
+      where: { email: adm.email },
+      update: { password: adminPassword, displayName: adm.displayName },
+      create: {
+        email: adm.email,
+        username: adm.username,
+        password: adminPassword,
+        displayName: adm.displayName,
+        role: "admin",
+      },
+    });
+  }
 
   // 3. Create Workstations with PINs
   const workstations = [
