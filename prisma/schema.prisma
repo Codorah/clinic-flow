@@ -1,0 +1,88 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Hospital {
+  id        Int      @id @default(1)
+  name      String   @default("Clinic of Grace")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String?  @unique
+  username    String?  @unique
+  password    String?  // For admin
+  pin         String?  // For workstation staff
+  displayName String?
+  role        String   // admin, reception, doctor, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  patients    Patient[]
+}
+
+model Patient {
+  id            String      @id @default(cuid())
+  firstName     String
+  lastName      String
+  age           Int?
+  gender        String?
+  birthDate     DateTime?
+  phone         String?
+  address       String?
+  bloodGroup    String?
+  insuranceId   String?
+  status        String?     // RECEPTION, NURSE_QUEUE, DOCTOR_READY, etc.
+  emergencyContact String?
+  vitals        Json?       // To store Temperature, BP, etc.
+  assignedNurseId String?
+  assignedDoctorId String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  createdBy     User?       @relation(fields: [createdById], references: [id])
+  createdById   String?
+  
+  treatments    Treatment[]
+  invoices      Invoice[]
+}
+
+model CatalogItem {
+  id        String   @id @default(cuid())
+  name      String
+  price     Float
+  category  String?
+  createdAt DateTime @default(now())
+}
+
+model Treatment {
+  id          String   @id @default(cuid())
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  patientId   String
+  type        String   // Observation, Consultation, Surgery, etc.
+  status      String   // ongoing, completed, pending
+  description String?
+  symptoms    String?
+  diagnosis   String?
+  prescriptions String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  patientId   String
+  amount      Float
+  status      String   // paid, pending, cancelled
+  service     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

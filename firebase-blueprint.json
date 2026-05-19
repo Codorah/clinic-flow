@@ -1,0 +1,117 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and role.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "username": { "type": "string", "description": "Unique username for PIN login" },
+        "pin": { "type": "string", "description": "4-6 digit numeric PIN" },
+        "displayName": { "type": "string" },
+        "role": { 
+          "type": "string", 
+          "enum": ["admin", "reception", "nurse", "doctor", "lab", "pharmacy", "accounting", "cashier", "hospitalization"] 
+        },
+        "specialty": { "type": "string", "description": "Doctor's specialty if applicable" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Patient": {
+      "title": "Patient Record",
+      "description": "Basic patient information and current clinical status.",
+      "type": "object",
+      "properties": {
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "phone": { "type": "string" },
+        "emergencyContact": { "type": "string" },
+        "status": { 
+          "type": "string", 
+          "enum": ["RECEPTION", "NURSE_QUEUE", "NURSE_CHECKING", "DOCTOR_QUEUE", "DOCTOR_CONSULTING", "LAB_WAITING", "PHARMACY_WAITING", "CASHIER_WAITING", "HOSPITALIZED", "DISCHARGED"] 
+        },
+        "assignedNurseId": { "type": "string" },
+        "assignedDoctorId": { "type": "string" },
+        "vitals": { "$ref": "#/entities/Vitals" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["firstName", "lastName", "phone", "status"]
+    },
+    "Vitals": {
+      "title": "Patient Vitals",
+      "description": "Information collected by the nurse.",
+      "type": "object",
+      "properties": {
+        "temperature": { "type": "number" },
+        "bloodPressure": { "type": "string" },
+        "heartRate": { "type": "number" },
+        "concerns": { "type": "string" },
+        "checkedBy": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Consultation": {
+      "title": "Doctor Consultation",
+      "description": "Records from the doctor's visit.",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "doctorId": { "type": "string" },
+        "diagnosis": { "type": "string" },
+        "prescriptions": { "type": "array", "items": { "type": "string" } },
+        "labOrders": { "type": "array", "items": { "type": "string" } },
+        "hospitalization": { "type": "boolean" },
+        "treatments": { "type": "array", "items": { "type": "string" } },
+        "totalCost": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Treatment": {
+      "title": "Treatment Catalog",
+      "description": "Predefined treatments and their prices.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" }
+      }
+    },
+    "Invoice": {
+      "title": "Patient Invoice",
+      "description": "Billing record for the patient.",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid"] },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Clinical staff user profiles."
+    },
+    "/patients/{patientId}": {
+      "schema": "Patient",
+      "description": "Patient records and current status."
+    },
+    "/consultations/{consultationId}": {
+      "schema": "Consultation",
+      "description": "Consultation history."
+    },
+    "/treatments/{treatmentId}": {
+      "schema": "Treatment",
+      "description": "Catalog of available treatments and prices."
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Billing and payment tracking."
+    }
+  }
+}

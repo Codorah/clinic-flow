@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net: Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function getRole() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role; }
+    function hasRole(role) { return isVerified() && getRole() == role; }
+    function isAdmin() { 
+      return isVerified() && (
+        getRole() == 'admin' || 
+        request.auth.token.email == 'ceo.codorah@gmail.com'
+      ); 
+    }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // --- Users ---
+    match /users/{userId} {
+      // Allow PIN lookup by username (doc ID)
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if isVerified() && (request.auth.uid == userId || isAdmin()) && (
+        // Initial user registration: default to 'reception' or something safe if not admin
+        incoming().role == 'reception' || isAdmin()
+      );
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+    }
+
+    // --- Patients ---
+    match /patients/{patientId} {
+      function isValidPatient(data) {
+        return data.firstName is string && data.firstName.size() > 0 && data.firstName.size() <= 100 &&
+               data.lastName is string && data.lastName.size() > 0 && data.lastName.size() <= 100 &&
+               data.phone is string && data.phone.size() <= 20 &&
+               data.status in ["RECEPTION", "NURSE_QUEUE", "NURSE_CHECKING", "DOCTOR_QUEUE", "DOCTOR_CONSULTING", "LAB_WAITING", "PHARMACY_WAITING", "CASHIER_WAITING", "HOSPITALIZED", "DISCHARGED"];
+      }
+
+      allow get: if isVerified();
+      allow list: if isVerified();
+      
+      allow create: if isVerified() && (hasRole('admin') || hasRole('reception')) &&
+                    isValidPatient(incoming()) &&
+                    incoming().status == "RECEPTION" &&
+                    incoming().createdAt == request.time;
+      
+      allow update: if isVerified() && (
+        isAdmin() ||
+        // Reception can move to nurse queue
+        (hasRole('reception') && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) && incoming().status == 'NURSE_QUEUE') ||
+        // Nurses can take patient and update vitals
+        (hasRole('nurse') && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'vitals', 'assignedNurseId', 'updatedAt'])) ||
+        // Doctors can consultation
+        (hasRole('doctor') && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'assignedDoctorId', 'updatedAt']))
+      ) && isValidPatient(incoming()) && incoming().updatedAt == request.time;
+    }
+
+    // --- Consultations ---
+    match /consultations/{consId} {
+      allow read: if isVerified();
+      allow create: if isVerified() && (hasRole('admin') || hasRole('doctor')) &&
+                    incoming().doctorId == request.auth.uid &&
+                    incoming().timestamp == request.time;
+    }
+
+    // --- Invoices ---
+    match /invoices/{invId} {
+      allow read: if isVerified();
+      allow create: if isVerified() && (hasRole('admin') || hasRole('doctor'));
+      allow update: if isVerified() && (
+        isAdmin() ||
+        (hasRole('cashier') && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) && incoming().status == 'paid')
+      ) && incoming().updatedAt == request.time;
+    }
+
+    // --- Treatments (Catalog) ---
+    match /treatments/{tId} {
+      allow read: if isVerified();
+      allow write: if isAdmin();
+    }
+  }
+}
