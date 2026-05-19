@@ -218,7 +218,12 @@ async function startServer() {
   // --- GLOBAL ERROR HANDLER ---
   app.use((err: any, req: any, res: any, next: any) => {
     console.error("Server Error:", err);
-    res.status(500).json({ error: "Erreur serveur. Veuillez réessayer." });
+    res.status(500).json({ 
+      error: "Erreur serveur. Veuillez réessayer.",
+      message: err.message || String(err),
+      stack: err.stack,
+      code: err.code
+    });
   });
 
   // Vite middleware for development
