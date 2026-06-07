@@ -13,7 +13,8 @@ import {
   DollarSign,
   ClipboardCheck,
   Receipt,
-  TrendingUp
+  TrendingUp,
+  Scan
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -122,6 +123,46 @@ export const LabDashboard: React.FC = () => {
         items={queue}
         actionLabel="Terminer les Tests"
         onAction={(id) => completeLab(id, 'DOCTOR_QUEUE')}
+      />
+    </div>
+  );
+};
+
+// Radiology Dashboard
+export const RadiologyDashboard: React.FC = () => {
+  const { apiFetch } = useAuth();
+  const [queue, setQueue] = useState<Patient[]>([]);
+
+  const fetchQueue = async () => {
+    const res = await apiFetch('/api/patients');
+    const data = await res.json();
+    setQueue(Array.isArray(data) ? data.filter((p: any) => p.status === 'RADIOLOGY_WAITING') : []);
+  };
+
+  useEffect(() => {
+    fetchQueue();
+    const interval = setInterval(fetchQueue, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const complete = async (id: string) => {
+    await apiFetch(`/api/patients/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'DOCTOR_QUEUE' })
+    });
+    fetchQueue();
+  };
+
+  return (
+    <div className="space-y-6">
+      <FlowGuide currentStepId="radiology" />
+      <QueueView
+        title="File d'attente Radiologie"
+        icon={<Scan />}
+        items={queue}
+        actionLabel="Examens Terminés"
+        onAction={complete}
       />
     </div>
   );
@@ -292,47 +333,83 @@ export const HospitalDashboard: React.FC = () => {
 export const AccountingDashboard: React.FC = () => {
   const { apiFetch } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchInvoices = async () => {
-    const res = await apiFetch('/api/invoices');
-    const data = await res.json();
-    setInvoices(Array.isArray(data) ? data : []);
+    try {
+      const res = await apiFetch('/api/invoices');
+      const data = await res.json();
+      setInvoices(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchInvoices();
-    const interval = setInterval(fetchInvoices, 5000);
+    const interval = setInterval(fetchInvoices, 8000);
     return () => clearInterval(interval);
   }, []);
 
   const total = invoices.reduce((acc, inv) => acc + (inv.status === 'paid' ? inv.amount : 0), 0);
   const pending = invoices.reduce((acc, inv) => acc + (inv.status === 'pending' ? inv.amount : 0), 0);
+  const count = invoices.length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-slate-400">
+        <div className="text-center"><TrendingUp size={40} className="mx-auto mb-3 animate-pulse opacity-30" /><p className="font-medium">Chargement des données…</p></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-emerald-600 p-8 rounded-3xl text-white shadow-xl shadow-emerald-100 flex justify-between items-center">
           <div><p className="text-emerald-100 font-bold uppercase tracking-widest text-xs mb-2">Total Collecté</p><h3 className="text-4xl font-black">{total.toLocaleString()} FCFA</h3></div>
-          <TrendingUp size={48} className="opacity-20" />
+          <TrendingUp size={40} className="opacity-20" />
         </div>
         <div className="bg-white p-8 rounded-3xl border-2 border-slate-100 flex justify-between items-center shadow-sm">
-          <div><p className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-2">Revenu Attendu</p><h3 className="text-4xl font-black text-slate-800">{(total + pending).toLocaleString()} FCFA</h3></div>
-          <DollarSign size={48} className="text-slate-100" />
+          <div><p className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-2">En Attente</p><h3 className="text-4xl font-black text-amber-600">{pending.toLocaleString()} FCFA</h3></div>
+          <Clock size={40} className="text-slate-100" />
+        </div>
+        <div className="bg-white p-8 rounded-3xl border-2 border-slate-100 flex justify-between items-center shadow-sm">
+          <div><p className="text-slate-400 font-bold uppercase tracking-widest text-xs mb-2">Transactions</p><h3 className="text-4xl font-black text-slate-800">{count}</h3></div>
+          <DollarSign size={40} className="text-slate-100" />
         </div>
       </div>
+
       <div className="bg-white p-8 rounded-3xl border border-slate-200">
         <h3 className="text-xl font-bold mb-6">Transactions Récentes</h3>
-        <div className="space-y-4">
-          {invoices.map(inv => (
-            <div key={inv.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-              <div className="flex items-center gap-4">
-                <div className={`size-10 rounded-xl flex items-center justify-center ${inv.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>{inv.status === 'paid' ? <CheckCircle2 size={20} /> : <Clock size={20} />}</div>
-                <div><p className="font-bold text-slate-800">Facture #{inv.id.slice(0, 8)}</p><p className="text-xs text-slate-400">Statut: {inv.status === 'paid' ? 'PAYÉE' : 'EN ATTENTE'}</p></div>
+        {invoices.length === 0 ? (
+          <div className="py-16 text-center text-slate-300">
+            <Receipt size={56} className="mx-auto mb-4 opacity-20" />
+            <p className="text-lg font-bold italic">Aucune transaction</p>
+            <p className="text-sm mt-1">Les factures apparaîtront après les consultations</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {invoices.slice().reverse().map(inv => (
+              <div key={inv.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className={`size-10 rounded-xl flex items-center justify-center ${inv.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                    {inv.status === 'paid' ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-800">
+                      {inv.patient ? `${inv.patient.firstName} ${inv.patient.lastName}` : `Facture #${inv.id.slice(0, 8)}`}
+                    </p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wide">{inv.status === 'paid' ? 'Payée' : 'En attente'}</p>
+                  </div>
+                </div>
+                <p className="font-black text-lg text-slate-800">{inv.amount.toLocaleString()} FCFA</p>
               </div>
-              <p className="font-black text-lg text-slate-800">{inv.amount} FCFA</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

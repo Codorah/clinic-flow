@@ -4,14 +4,15 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { 
-  Stethoscope, 
-  User, 
-  Activity, 
-  FlaskConical, 
-  Pill, 
-  Hospital, 
-  ChevronRight, 
+import {
+  Stethoscope,
+  User,
+  Activity,
+  FlaskConical,
+  Pill,
+  Hospital,
+  Scan,
+  ChevronRight,
   ClipboardList,
   CheckCircle2,
   AlertCircle,
@@ -198,11 +199,12 @@ export const DoctorDashboard: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-                      <Button className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('LAB_WAITING')}><FlaskConical className="mr-2" size={18} /> Laboratoire</Button>
-                      <Button className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('PHARMACY_WAITING')}><Pill className="mr-2" size={18} /> Pharmacie</Button>
-                      <Button className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('HOSPITALIZED')}><Hospital className="mr-2" size={18} /> Hospit.</Button>
-                      <Button className="h-14 rounded-xl bg-emerald-600 text-white" onClick={() => handleComplete('CASHIER_WAITING')}><CheckCircle2 className="mr-2" size={18} /> Terminer</Button>
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-8">
+                      <Button type="button" className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('LAB_WAITING')}><FlaskConical className="mr-2" size={16} /> Labo</Button>
+                      <Button type="button" className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('RADIOLOGY_WAITING')}><Scan className="mr-2" size={16} /> Radio</Button>
+                      <Button type="button" className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('PHARMACY_WAITING')}><Pill className="mr-2" size={16} /> Pharmacie</Button>
+                      <Button type="button" className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('HOSPITALIZED')}><Hospital className="mr-2" size={16} /> Hospit.</Button>
+                      <Button type="button" className="h-14 rounded-xl bg-emerald-600 text-white" onClick={() => handleComplete('CASHIER_WAITING')}><CheckCircle2 className="mr-2" size={16} /> Terminer</Button>
                     </div>
                   </div>
                 </div>

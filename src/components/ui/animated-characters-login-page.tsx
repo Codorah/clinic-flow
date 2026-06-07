@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  Heart, 
-  Stethoscope, 
-  FlaskConical, 
-  Pill, 
-  Calculator, 
-  Wallet, 
-  Hospital, 
+import {
+  Heart,
+  Stethoscope,
+  FlaskConical,
+  Pill,
+  Calculator,
+  Wallet,
+  Hospital,
+  Scan,
   ChevronLeft,
   ArrowRight,
   Shield,
@@ -25,14 +26,15 @@ import { Button } from "@/src/components/ui/button";
 import { useAuth, UserRole } from "@/src/store/AuthContext";
 
 const workstations: { id: UserRole; label: string; icon: React.ReactNode; color: string }[] = [
-  { id: "reception", label: "Réception", icon: <Users size={24} />, color: "bg-blue-500" },
-  { id: "doctor", label: "Consultation", icon: <Stethoscope size={24} />, color: "bg-emerald-500" },
-  { id: "nurse", label: "Infirmerie", icon: <Heart size={24} />, color: "bg-rose-500" },
-  { id: "lab", label: "Laboratoire", icon: <FlaskConical size={24} />, color: "bg-amber-500" },
-  { id: "pharmacy", label: "Pharmacie", icon: <Pill size={24} />, color: "bg-purple-500" },
-  { id: "accounting", label: "Comptabilité", icon: <Calculator size={24} />, color: "bg-slate-700" },
-  { id: "cashier", label: "Caisse", icon: <Wallet size={24} />, color: "bg-cyan-500" },
-  { id: "hospitalization", label: "Hospitalisation", icon: <Hospital size={24} />, color: "bg-indigo-500" },
+  { id: "reception",       label: "Réception",      icon: <Users size={24} />,       color: "bg-blue-500"    },
+  { id: "doctor",          label: "Consultation",   icon: <Stethoscope size={24} />, color: "bg-emerald-500" },
+  { id: "nurse",           label: "Infirmerie",     icon: <Heart size={24} />,       color: "bg-rose-500"    },
+  { id: "lab",             label: "Laboratoire",    icon: <FlaskConical size={24} />,color: "bg-amber-500"   },
+  { id: "radiology",       label: "Radiologie",     icon: <Scan size={24} />,        color: "bg-violet-500"  },
+  { id: "pharmacy",        label: "Pharmacie",      icon: <Pill size={24} />,        color: "bg-purple-500"  },
+  { id: "accounting",      label: "Comptabilité",   icon: <Calculator size={24} />,  color: "bg-slate-700"   },
+  { id: "cashier",         label: "Caisse",         icon: <Wallet size={24} />,      color: "bg-cyan-500"    },
+  { id: "hospitalization", label: "Hospitalisation",icon: <Hospital size={24} />,    color: "bg-indigo-500"  },
 ];
 
 export default function LoginPage() {

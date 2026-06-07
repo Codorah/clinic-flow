@@ -1,12 +1,12 @@
 import React from 'react';
 import { useAuth, UserRole } from '../store/AuthContext';
-import { 
-  Users, 
-  Calendar, 
-  Settings, 
-  LogOut, 
-  Search, 
-  Plus, 
+import {
+  Users,
+  Calendar,
+  Settings,
+  LogOut,
+  Search,
+  Plus,
   Activity,
   Clock,
   ChevronRight,
@@ -15,6 +15,7 @@ import {
   FlaskConical,
   Pill,
   Wallet,
+  Scan,
   LayoutDashboard,
   Hospital,
   Calculator,
@@ -36,6 +37,7 @@ export const ClinicLayout: React.FC<ClinicLayoutProps> = ({ children }) => {
     { role: 'nurse', icon: <Activity size={20} />, label: 'Signes Vitaux', id: 'nurse' },
     { role: 'doctor', icon: <Stethoscope size={20} />, label: 'Consultation', id: 'doctor' },
     { role: 'lab', icon: <FlaskConical size={20} />, label: 'Laboratoire', id: 'lab' },
+    { role: 'radiology', icon: <Scan size={20} />, label: 'Radiologie', id: 'radiology' },
     { role: 'pharmacy', icon: <Pill size={20} />, label: 'Pharmacie', id: 'pharmacy' },
     { role: 'accounting', icon: <Calculator size={20} />, label: 'Comptabilité', id: 'accounting' },
     { role: 'cashier', icon: <Wallet size={20} />, label: 'Caisse', id: 'cashier' },
@@ -52,6 +54,7 @@ export const ClinicLayout: React.FC<ClinicLayoutProps> = ({ children }) => {
     nurse: 'Infirmerie',
     doctor: 'Consultation',
     lab: 'Laboratoire',
+    radiology: 'Radiologie',
     pharmacy: 'Pharmacie',
     accounting: 'Comptabilité',
     cashier: 'Caisse',

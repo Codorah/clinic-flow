@@ -30,6 +30,7 @@ export const NurseDashboard: React.FC = () => {
       const res = await apiFetch('/api/patients');
       const data = await res.json();
       
+      if (!Array.isArray(data)) return;
       const newQueue = data.filter((p: any) => p.status === 'NURSE_QUEUE');
       if (newQueue.length > queue.length) {
         setShowNotification("Un nouveau patient est arrivé !");

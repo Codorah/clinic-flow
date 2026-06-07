@@ -8,10 +8,11 @@ import { NurseDashboard } from './components/dashboards/NurseDashboard';
 import { DoctorDashboard } from './components/dashboards/DoctorDashboard';
 import { SplashScreen } from './components/SplashScreen';
 import { AnimatePresence } from 'motion/react';
-import { 
-  LabDashboard, 
-  PharmacyDashboard, 
-  CashierDashboard, 
+import {
+  LabDashboard,
+  RadiologyDashboard,
+  PharmacyDashboard,
+  CashierDashboard,
   HospitalDashboard,
   AccountingDashboard
 } from './components/dashboards/SecondaryDashboards';
@@ -47,6 +48,7 @@ export default function App() {
       case 'nurse': return <NurseDashboard />;
       case 'doctor': return <DoctorDashboard />;
       case 'lab': return <LabDashboard />;
+      case 'radiology': return <RadiologyDashboard />;
       case 'pharmacy': return <PharmacyDashboard />;
       case 'cashier': return <CashierDashboard />;
       case 'hospitalization': return <HospitalDashboard />;

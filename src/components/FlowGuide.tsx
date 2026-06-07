@@ -1,11 +1,12 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { 
-  Users, 
-  Activity, 
-  Stethoscope, 
-  FlaskConical, 
-  Pill, 
+import {
+  Users,
+  Activity,
+  Stethoscope,
+  FlaskConical,
+  Scan,
+  Pill,
   Wallet,
   CheckCircle2,
   ChevronRight
@@ -18,12 +19,13 @@ interface Step {
 }
 
 const steps: Step[] = [
-  { id: 'reception', label: 'Réception', icon: <Users size={16} /> },
-  { id: 'nurse', label: 'Infirmerie', icon: <Activity size={16} /> },
-  { id: 'doctor', label: 'Consultation', icon: <Stethoscope size={16} /> },
-  { id: 'secondary', label: 'Para-clinique', icon: <FlaskConical size={16} /> },
-  { id: 'billing', label: 'Paiement', icon: <Wallet size={16} /> },
-  { id: 'exit', label: 'Sortie', icon: <CheckCircle2 size={16} /> },
+  { id: 'reception', label: 'Réception',    icon: <Users size={16} /> },
+  { id: 'nurse',     label: 'Infirmerie',   icon: <Activity size={16} /> },
+  { id: 'doctor',    label: 'Consultation', icon: <Stethoscope size={16} /> },
+  { id: 'secondary', label: 'Para-clinique',icon: <FlaskConical size={16} /> },
+  { id: 'radiology', label: 'Radiologie',   icon: <Scan size={16} /> },
+  { id: 'billing',   label: 'Paiement',     icon: <Wallet size={16} /> },
+  { id: 'exit',      label: 'Sortie',       icon: <CheckCircle2 size={16} /> },
 ];
 
 interface FlowGuideProps {
