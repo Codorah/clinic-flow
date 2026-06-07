@@ -32,7 +32,7 @@ export const ReceptionDashboard: React.FC = () => {
     try {
       const res = await apiFetch('/api/patients');
       const data = await res.json();
-      setPatients(data.filter((p: any) => p.status === 'RECEPTION'));
+      if (Array.isArray(data)) setPatients(data.filter((p: any) => p.status === 'RECEPTION'));
     } catch (e) {
       console.error(e);
     } finally {

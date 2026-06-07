@@ -38,7 +38,7 @@ const workstations: { id: UserRole; label: string; icon: React.ReactNode; color:
 export default function LoginPage() {
   const { loginWithPin, loginWithEmail, hospitalName } = useAuth();
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-  const [isAdminMode, setIsAdminMode] = useState(true);
+  const [isAdminMode, setIsAdminMode] = useState(false);
   const [pin, setPin] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

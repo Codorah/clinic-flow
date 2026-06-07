@@ -19,7 +19,7 @@ interface Patient {
 }
 
 export const NurseDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, apiFetch } = useAuth();
   const [queue, setQueue] = useState<Patient[]>([]);
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [vitals, setVitals] = useState({ temp: '', bp: '', hr: '', concerns: '' });
@@ -27,7 +27,7 @@ export const NurseDashboard: React.FC = () => {
 
   const fetchQueue = async () => {
     try {
-      const res = await fetch('/api/patients');
+      const res = await apiFetch('/api/patients');
       const data = await res.json();
       
       const newQueue = data.filter((p: any) => p.status === 'NURSE_QUEUE');
@@ -52,7 +52,7 @@ export const NurseDashboard: React.FC = () => {
 
   const takePatient = async (id: string) => {
     try {
-      await fetch(`/api/patients/${id}`, {
+      await apiFetch(`/api/patients/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,7 +71,7 @@ export const NurseDashboard: React.FC = () => {
     if (!activePatient) return;
 
     try {
-      await fetch(`/api/patients/${activePatient.id}`, {
+      await apiFetch(`/api/patients/${activePatient.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

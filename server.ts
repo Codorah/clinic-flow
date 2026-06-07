@@ -41,7 +41,7 @@ const requireAdmin = (req: any, res: any, next: any) => {
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 3001;
 
   const corsOrigin = process.env.APP_URL || "*";
   app.use(cors({ origin: corsOrigin }));
@@ -125,7 +125,7 @@ async function startServer() {
       data.password = await bcrypt.hash(password, 10);
     }
     if (pin) {
-      data.pin = await bcrypt.hash(pin, 10);
+      data.pin = pin; // PINs are 4-digit internal codes, stored plain like seeded workstations
     }
     const user = await prisma.user.create({ data });
     res.json(user);
@@ -218,11 +218,10 @@ async function startServer() {
   // --- GLOBAL ERROR HANDLER ---
   app.use((err: any, req: any, res: any, next: any) => {
     console.error("Server Error:", err);
-    res.status(500).json({ 
+    const isProd = process.env.NODE_ENV === 'production';
+    res.status(500).json({
       error: "Erreur serveur. Veuillez réessayer.",
-      message: err.message || String(err),
-      stack: err.stack,
-      code: err.code
+      ...(isProd ? {} : { message: err.message, stack: err.stack, code: err.code })
     });
   });
 

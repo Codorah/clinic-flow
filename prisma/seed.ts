@@ -31,15 +31,16 @@ async function main() {
   });
 
   // Postes de travail (PIN uniquement)
+  // IMPORTANT: usernames must match the UserRole IDs sent by the frontend
   const workstations = [
-    { username: "reception",     pin: "1111", role: "reception",       displayName: "Réception" },
-    { username: "docteur",       pin: "2222", role: "doctor",          displayName: "Consultation" },
-    { username: "infirmerie",    pin: "3333", role: "nurse",           displayName: "Soins Infirmiers" },
-    { username: "laboratoire",   pin: "4444", role: "laboratory",      displayName: "Laboratoire" },
-    { username: "pharmacie",     pin: "5555", role: "pharmacy",        displayName: "Pharmacie" },
-    { username: "comptabilite",  pin: "6666", role: "accounting",      displayName: "Comptabilité" },
-    { username: "caisse",        pin: "7777", role: "cashier",         displayName: "Caisse" },
-    { username: "hospitalisation",pin: "8888", role: "hospitalization", displayName: "Hospitalisation" },
+    { username: "reception",       pin: "1111", role: "reception",       displayName: "Réception" },
+    { username: "doctor",          pin: "2222", role: "doctor",          displayName: "Consultation" },
+    { username: "nurse",           pin: "3333", role: "nurse",           displayName: "Soins Infirmiers" },
+    { username: "lab",             pin: "4444", role: "lab",             displayName: "Laboratoire" },
+    { username: "pharmacy",        pin: "5555", role: "pharmacy",        displayName: "Pharmacie" },
+    { username: "accounting",      pin: "6666", role: "accounting",      displayName: "Comptabilité" },
+    { username: "cashier",         pin: "7777", role: "cashier",         displayName: "Caisse" },
+    { username: "hospitalization", pin: "8888", role: "hospitalization", displayName: "Hospitalisation" },
   ];
 
   for (const ws of workstations) {

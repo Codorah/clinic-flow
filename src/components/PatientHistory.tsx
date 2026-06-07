@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  History, 
+import { useAuth } from '../store/AuthContext';
+import {
+  History,
   Search, 
   User, 
   Calendar, 
@@ -25,6 +26,7 @@ interface Patient {
 }
 
 export const PatientHistory: React.FC = () => {
+  const { apiFetch } = useAuth();
   const [search, setSearch] = useState('');
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -34,9 +36,9 @@ export const PatientHistory: React.FC = () => {
     if (!search) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/patients');
+      const res = await apiFetch('/api/patients');
       const data = await res.json();
-      const filtered = data.filter((p: any) => 
+      const filtered = (Array.isArray(data) ? data : []).filter((p: any) =>
         p.firstName.toLowerCase().includes(search.toLowerCase()) || 
         p.lastName.toLowerCase().includes(search.toLowerCase()) ||
         p.id.includes(search.toLowerCase()) ||

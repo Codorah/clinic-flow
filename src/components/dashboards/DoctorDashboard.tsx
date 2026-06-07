@@ -38,7 +38,7 @@ interface Treatment {
 }
 
 export const DoctorDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, apiFetch } = useAuth();
   const [queue, setQueue] = useState<Patient[]>([]);
   const [activePatient, setActivePatient] = useState<Patient | null>(null);
   const [treatments, setTreatments] = useState<Treatment[]>([]);
@@ -48,14 +48,14 @@ export const DoctorDashboard: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const catRes = await fetch('/api/catalog');
+      const catRes = await apiFetch('/api/catalog');
       const catData = await catRes.json();
-      setTreatments(catData);
+      if (Array.isArray(catData)) setTreatments(catData);
 
-      const qRes = await fetch('/api/patients');
+      const qRes = await apiFetch('/api/patients');
       const qData = await qRes.json();
+      if (!Array.isArray(qData)) return;
       setQueue(qData.filter((p: any) => p.status === 'DOCTOR_QUEUE'));
-      
       const active = qData.find((p: any) => p.status === 'DOCTOR_CONSULTING' && p.assignedDoctorId === user?.id);
       setActivePatient(active || null);
     } catch (e) {
@@ -81,7 +81,7 @@ export const DoctorDashboard: React.FC = () => {
     // Immediate UI feedback
     setQueue(prev => prev.filter(p => p.id !== id));
     
-    await fetch(`/api/patients/${id}`, {
+    await apiFetch(`/api/patients/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'DOCTOR_CONSULTING', assignedDoctorId: user?.id })
@@ -101,7 +101,7 @@ export const DoctorDashboard: React.FC = () => {
     if (!activePatient) return;
     
     // Create Treatment Record
-    await fetch('/api/treatments', {
+    await apiFetch('/api/treatments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -115,7 +115,7 @@ export const DoctorDashboard: React.FC = () => {
     });
 
     // Create Invoice
-    await fetch('/api/invoices', {
+    await apiFetch('/api/invoices', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -127,7 +127,7 @@ export const DoctorDashboard: React.FC = () => {
     });
 
     // Update Patient Status
-    await fetch(`/api/patients/${activePatient.id}`, {
+    await apiFetch(`/api/patients/${activePatient.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: nextStatus, vitals: activePatient.vitals })

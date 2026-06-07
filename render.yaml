@@ -1,12 +1,15 @@
 services:
   - type: web
-    name: clinic-flow-web
+    name: clinic-flow
     env: node
+    region: frankfurt
     plan: free
-    buildCommand: npm install --include=dev && npx prisma generate && npm run build && npx prisma db push && npx prisma db seed
-    startCommand: npm run start
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
-      - key: JWT_SECRET
-        generateValue: true
       - key: NODE_ENV
         value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 10000

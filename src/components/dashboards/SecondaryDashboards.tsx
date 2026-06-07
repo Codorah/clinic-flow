@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../store/AuthContext';
 import { Button } from '../ui/button';
 import { FlowGuide } from '../FlowGuide';
-import { 
-  FlaskConical, 
-  Pill, 
-  Wallet, 
-  Hospital, 
-  UserCheck, 
-  Clock, 
-  CheckCircle2, 
-  DollarSign, 
+import {
+  FlaskConical,
+  Pill,
+  Wallet,
+  Hospital,
+  UserCheck,
+  Clock,
+  CheckCircle2,
+  DollarSign,
   ClipboardCheck,
   Receipt,
   TrendingUp
@@ -47,7 +47,7 @@ function QueueView({ title, icon, items, actionLabel, onAction }: { title: strin
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <AnimatePresence>
           {items.map(p => (
-            <motion.div 
+            <motion.div
               key={p.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -60,13 +60,13 @@ function QueueView({ title, icon, items, actionLabel, onAction }: { title: strin
                   </div>
                   <Clock size={16} className="text-slate-300" />
                 </div>
-                
+
                 <div>
                   <h4 className="text-lg font-black text-slate-800 leading-tight">{p.firstName} {p.lastName}</h4>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Traitement en attente</p>
                 </div>
 
-                <Button 
+                <Button
                    onClick={() => onAction(p.id)}
                   className="w-full h-10 rounded-xl bg-slate-50 text-slate-700 font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-600 hover:text-white border border-slate-100"
                 >
@@ -89,12 +89,13 @@ function QueueView({ title, icon, items, actionLabel, onAction }: { title: strin
 
 // Laboratory Dashboard
 export const LabDashboard: React.FC = () => {
+  const { apiFetch } = useAuth();
   const [queue, setQueue] = useState<Patient[]>([]);
 
   const fetchQueue = async () => {
-    const res = await fetch('/api/patients');
+    const res = await apiFetch('/api/patients');
     const data = await res.json();
-    setQueue(data.filter((p: any) => p.status === 'LAB_WAITING'));
+    setQueue(Array.isArray(data) ? data.filter((p: any) => p.status === 'LAB_WAITING') : []);
   };
 
   useEffect(() => {
@@ -104,7 +105,7 @@ export const LabDashboard: React.FC = () => {
   }, []);
 
   const completeLab = async (id: string, next: string) => {
-    await fetch(`/api/patients/${id}`, {
+    await apiFetch(`/api/patients/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: next })
@@ -115,12 +116,12 @@ export const LabDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <FlowGuide currentStepId="secondary" />
-      <QueueView 
-        title="File d'attente Laboratoire" 
-        icon={<FlaskConical />} 
-        items={queue} 
-        actionLabel="Terminer les Tests" 
-        onAction={(id) => completeLab(id, 'DOCTOR_QUEUE')} 
+      <QueueView
+        title="File d'attente Laboratoire"
+        icon={<FlaskConical />}
+        items={queue}
+        actionLabel="Terminer les Tests"
+        onAction={(id) => completeLab(id, 'DOCTOR_QUEUE')}
       />
     </div>
   );
@@ -128,12 +129,13 @@ export const LabDashboard: React.FC = () => {
 
 // Pharmacy Dashboard
 export const PharmacyDashboard: React.FC = () => {
+  const { apiFetch } = useAuth();
   const [queue, setQueue] = useState<Patient[]>([]);
 
   const fetchQueue = async () => {
-    const res = await fetch('/api/patients');
+    const res = await apiFetch('/api/patients');
     const data = await res.json();
-    setQueue(data.filter((p: any) => p.status === 'PHARMACY_WAITING'));
+    setQueue(Array.isArray(data) ? data.filter((p: any) => p.status === 'PHARMACY_WAITING') : []);
   };
 
   useEffect(() => {
@@ -143,7 +145,7 @@ export const PharmacyDashboard: React.FC = () => {
   }, []);
 
   const dispense = async (id: string) => {
-    await fetch(`/api/patients/${id}`, {
+    await apiFetch(`/api/patients/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'CASHIER_WAITING' })
@@ -154,12 +156,12 @@ export const PharmacyDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <FlowGuide currentStepId="secondary" />
-      <QueueView 
-        title="Dispensaire Pharmacie" 
-        icon={<Pill />} 
-        items={queue} 
-        actionLabel="Délivrer Médicaments" 
-        onAction={dispense} 
+      <QueueView
+        title="Dispensaire Pharmacie"
+        icon={<Pill />}
+        items={queue}
+        actionLabel="Délivrer Médicaments"
+        onAction={dispense}
       />
     </div>
   );
@@ -167,12 +169,13 @@ export const PharmacyDashboard: React.FC = () => {
 
 // Cashier / Billing Dashboard
 export const CashierDashboard: React.FC = () => {
+  const { apiFetch } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   const fetchInvoices = async () => {
-    const res = await fetch('/api/invoices');
+    const res = await apiFetch('/api/invoices');
     const data = await res.json();
-    setInvoices(data.filter((inv: any) => inv.status === 'pending'));
+    setInvoices(Array.isArray(data) ? data.filter((inv: any) => inv.status === 'pending') : []);
   };
 
   useEffect(() => {
@@ -182,12 +185,12 @@ export const CashierDashboard: React.FC = () => {
   }, []);
 
   const pay = async (inv: Invoice) => {
-    await fetch(`/api/invoices/${inv.id}`, {
+    await apiFetch(`/api/invoices/${inv.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'paid' })
     });
-    await fetch(`/api/patients/${inv.patientId}`, {
+    await apiFetch(`/api/patients/${inv.patientId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'DISCHARGED' })
@@ -206,7 +209,7 @@ export const CashierDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence>
           {invoices.map(inv => (
-            <motion.div 
+            <motion.div
               key={inv.id}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -227,7 +230,7 @@ export const CashierDashboard: React.FC = () => {
                 <p className="text-3xl font-black text-emerald-700">{inv.amount.toLocaleString()} FCFA</p>
               </div>
 
-              <Button 
+              <Button
                 onClick={() => pay(inv)}
                 className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-50"
               >
@@ -249,12 +252,13 @@ export const CashierDashboard: React.FC = () => {
 
 // Hospitalization Dashboard
 export const HospitalDashboard: React.FC = () => {
+  const { apiFetch } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
 
   const fetchQueue = async () => {
-    const res = await fetch('/api/patients');
+    const res = await apiFetch('/api/patients');
     const data = await res.json();
-    setPatients(data.filter((p: any) => p.status === 'HOSPITALIZED'));
+    setPatients(Array.isArray(data) ? data.filter((p: any) => p.status === 'HOSPITALIZED') : []);
   };
 
   useEffect(() => {
@@ -266,19 +270,19 @@ export const HospitalDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <FlowGuide currentStepId="secondary" />
-      <QueueView 
-        title="Salles d'Hospitalisation" 
-        icon={<Hospital />} 
-        items={patients} 
-        actionLabel="Prêt pour Sortie" 
+      <QueueView
+        title="Salles d'Hospitalisation"
+        icon={<Hospital />}
+        items={patients}
+        actionLabel="Prêt pour Sortie"
         onAction={async (id) => {
-          await fetch(`/api/patients/${id}`, {
+          await apiFetch(`/api/patients/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'CASHIER_WAITING' })
           });
           fetchQueue();
-        }} 
+        }}
       />
     </div>
   );
@@ -286,12 +290,13 @@ export const HospitalDashboard: React.FC = () => {
 
 // Accounting Dashboard
 export const AccountingDashboard: React.FC = () => {
+  const { apiFetch } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   const fetchInvoices = async () => {
-    const res = await fetch('/api/invoices');
+    const res = await apiFetch('/api/invoices');
     const data = await res.json();
-    setInvoices(data);
+    setInvoices(Array.isArray(data) ? data : []);
   };
 
   useEffect(() => {
