@@ -109,7 +109,47 @@ async function startServer() {
     const invoices = await prisma.invoice.findMany({ where: { status: "paid" } });
     const totalRevenue = invoices.reduce((sum, inv) => sum + inv.amount, 0);
     const pendingInvoices = await prisma.invoice.count({ where: { status: "pending" } });
-    res.json({ totalPatients, totalRevenue, activeTreatments: treatments, pendingInvoices });
+
+    // Calculate last 7 days history
+    const last7Days = Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }).reverse();
+
+    const dailyStats = await Promise.all(last7Days.map(async (date) => {
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+
+      const patientCount = await prisma.patient.count({
+        where: {
+          createdAt: {
+            gte: date,
+            lt: nextDate
+          }
+        }
+      });
+
+      const dayInvoices = await prisma.invoice.findMany({
+        where: {
+          status: "paid",
+          createdAt: {
+            gte: date,
+            lt: nextDate
+          }
+        }
+      });
+      const revenue = dayInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+
+      return {
+        day: date.toLocaleDateString("fr-FR", { weekday: "short" }),
+        patients: patientCount,
+        revenue
+      };
+    }));
+
+    res.json({ totalPatients, totalRevenue, activeTreatments: treatments, pendingInvoices, dailyStats });
   }));
 
   // Users — admin only
@@ -145,6 +185,25 @@ async function startServer() {
   app.get("/api/catalog", authenticate, asyncHandler(async (req: any, res: any) => {
     const items = await prisma.catalogItem.findMany();
     res.json(items);
+  }));
+
+  // Update Catalog item (stock, price) — admin or pharmacy or cashier
+  app.put("/api/catalog/:id", authenticate, asyncHandler(async (req: any, res: any) => {
+    const allowed = ["admin", "pharmacy", "cashier", "accounting"];
+    if (!allowed.includes(req.user?.role)) {
+      return res.status(403).json({ error: "Accès refusé" });
+    }
+    const { price, stock, minStock } = req.body;
+    const updateData: any = {};
+    if (price !== undefined) updateData.price = parseFloat(price);
+    if (stock !== undefined) updateData.stock = parseInt(stock);
+    if (minStock !== undefined) updateData.minStock = parseInt(minStock);
+
+    const item = await prisma.catalogItem.update({
+      where: { id: req.params.id },
+      data: updateData
+    });
+    res.json(item);
   }));
 
   // Patients — all authenticated users

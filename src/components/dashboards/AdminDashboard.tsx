@@ -16,7 +16,10 @@ import {
   Shield,
   Trash2,
   Key,
-  Sparkles
+  Sparkles,
+  Package,
+  Check,
+  Scissors
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '../ui/button';
@@ -25,14 +28,16 @@ import { Label } from '../ui/label';
 
 export const AdminDashboard: React.FC = () => {
   const { apiFetch, updateHospitalName } = useAuth();
-  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'settings'>('analytics');
-  const [stats, setStats] = useState({
+  const [activeTab, setActiveTab] = useState<'analytics' | 'inventory' | 'users' | 'settings'>('analytics');
+  const [stats, setStats] = useState<any>({
     totalPatients: 0,
     totalRevenue: 0,
     activeTreatments: 0,
-    pendingInvoices: 0
+    pendingInvoices: 0,
+    dailyStats: []
   });
   const [usersList, setUsersList] = useState<any[]>([]);
+  const [catalogItems, setCatalogItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingHospitalName, setEditingHospitalName] = useState('');
 
@@ -43,17 +48,25 @@ export const AdminDashboard: React.FC = () => {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
+  // In-line editing states for catalog items
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editPrice, setEditPrice] = useState('');
+  const [editStock, setEditStock] = useState('');
+  const [editMinStock, setEditMinStock] = useState('');
+
   const fetchData = async () => {
     try {
-      const [statsRes, usersRes, hospitalRes] = await Promise.all([
+      const [statsRes, usersRes, hospitalRes, catalogRes] = await Promise.all([
         apiFetch('/api/stats'),
         apiFetch('/api/users'),
         apiFetch('/api/hospital'),
+        apiFetch('/api/catalog'),
       ]);
       setStats(await statsRes.json());
       setUsersList(await usersRes.json());
       const hospitalData = await hospitalRes.json();
       setEditingHospitalName(hospitalData.name);
+      setCatalogItems(await catalogRes.json());
       setLoading(false);
     } catch (e) {
       console.error(e);
@@ -106,7 +119,35 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  if (loading) return <div>Chargement des analyses...</div>;
+  const handleUpdateStock = async (id: string) => {
+    try {
+      await apiFetch(`/api/catalog/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          price: editPrice ? parseFloat(editPrice) : undefined,
+          stock: editStock ? parseInt(editStock) : undefined,
+          minStock: editMinStock ? parseInt(editMinStock) : undefined
+        })
+      });
+      setEditingItemId(null);
+      fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const startEditItem = (item: any) => {
+    setEditingItemId(item.id);
+    setEditPrice(item.price.toString());
+    setEditStock(item.stock.toString());
+    setEditMinStock(item.minStock.toString());
+  };
+
+  if (loading) return <div className="p-12 text-center text-slate-400 italic">Chargement des données administratives...</div>;
+
+  // Compute stats or warnings
+  const lowStockItems = catalogItems.filter(item => item.stock <= item.minStock);
 
   return (
     <div className="space-y-8 pb-12">
@@ -114,18 +155,19 @@ export const AdminDashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-800 italic uppercase tracking-tighter">Analyses Diagnostiques</h1>
-          <p className="text-slate-500 font-medium">Matrice de Performance Clinique</p>
+          <p className="text-slate-500 font-medium">Matrice de Performance Clinique & Stocks</p>
         </div>
-        <div className="flex bg-slate-100 p-1 rounded-2xl">
+        <div className="flex bg-slate-100 p-1 rounded-2xl overflow-x-auto max-w-full">
           {[
             { id: 'analytics', label: 'Analyses' },
+            { id: 'inventory', label: 'Stocks & Prix' },
             { id: 'users', label: 'Personnel' },
             { id: 'settings', label: 'Paramètres' }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all capitalize ${activeTab === tab.id ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap capitalize ${activeTab === tab.id ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
               {tab.label}
             </button>
@@ -148,6 +190,20 @@ export const AdminDashboard: React.FC = () => {
             <KPICard label="En Attente" value={stats.pendingInvoices.toString()} trend="-3" icon={<TrendingUp className="text-amber-600" />} color="amber" isWarning />
           </section>
 
+          {/* Real-time SVG Curves Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-4">
+              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2"><TrendingUp className="text-emerald-500" /> Courbe des Revenus Hebdomadaires</h3>
+              <SVGLineChart data={stats.dailyStats} dataKey="revenue" color="#10b981" label="Revenus en FCFA" />
+            </div>
+
+            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-4">
+              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Users className="text-blue-500" /> Fréquentation des Patients (7 jours)</h3>
+              <SVGLineChart data={stats.dailyStats} dataKey="patients" color="#3b82f6" label="Nombre de Patients" />
+            </div>
+          </div>
+
+          {/* Lower Section (Performance, Prevalence & Workstation Checklists) */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <motion.div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-8"><BarChart3 className="text-emerald-600" /> Performance Services</h3>
@@ -159,13 +215,19 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </motion.div>
 
+            {/* Checklist of added items and workstations */}
             <motion.div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-8"><PieChart className="text-emerald-600" /> Prévalence Maladies</h3>
-              <div className="space-y-6">
-                <BarItem label="Paludisme" progress={45} color="bg-red-500" count={156} />
-                <BarItem label="Typhoïde" progress={25} color="bg-orange-500" count={86} />
-                <BarItem label="Grippe" progress={20} color="bg-blue-400" count={69} />
-                <BarItem label="Diabète" progress={10} color="bg-purple-400" count={34} />
+              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-6"><CheckCircle2 className="text-emerald-600" /> Intégration des Postes</h3>
+              <div className="space-y-4">
+                <WorkstationCheckItem label="Réception (Fichiers, Archives)" checked />
+                <WorkstationCheckItem label="Soins Infirmiers (Vitrages, Vitaux)" checked />
+                <WorkstationCheckItem label="Consultation Docteur (Diagnostique)" checked />
+                <WorkstationCheckItem label="Laboratoire & Analyses" checked />
+                <WorkstationCheckItem label="Imagerie & Radiologie" checked />
+                <WorkstationCheckItem label="Bloc Chirurgical (Opérations)" checked />
+                <WorkstationCheckItem label="Pharmacie & Catalogue Médical" checked />
+                <WorkstationCheckItem label="Facturation & Caisse" checked />
+                <WorkstationCheckItem label="Comptabilité Clinique" checked />
               </div>
             </motion.div>
 
@@ -173,6 +235,14 @@ export const AdminDashboard: React.FC = () => {
               <div className="relative">
                 <h3 className="text-xl font-bold flex items-center gap-2 mb-8 border-b border-white/10 pb-6"><PieChart className="text-emerald-400" /> Alertes Opérationnelles</h3>
                 <div className="space-y-4">
+                  {lowStockItems.length > 0 && (
+                    <LogItem 
+                      icon={<AlertTriangle className="text-red-400 animate-pulse" />} 
+                      title="Rupture / Alerte Stock" 
+                      desc={`${lowStockItems.length} article(s) sous le seuil minimum !`} 
+                      time="ALERTE" 
+                    />
+                  )}
                   <LogItem icon={<AlertTriangle className="text-amber-400" />} title="Base de Données" desc="Moteur Prisma optimisé avec succès." time="En direct" />
                   <LogItem icon={<CheckCircle2 className="text-emerald-400" />} title="Postes Actifs" desc="Tous les terminaux sont en ligne." time="maintenant" />
                 </div>
@@ -180,6 +250,119 @@ export const AdminDashboard: React.FC = () => {
             </motion.div>
           </div>
         </>
+      ) : activeTab === 'inventory' ? (
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-6">
+          <div className="flex justify-between items-center pb-6 border-b border-slate-100">
+            <div>
+              <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                <Package className="text-emerald-600" /> Gestion des Stocks & Tarifs
+              </h3>
+              <p className="text-sm text-slate-400 font-medium">Consulter et modifier les quantités de médicaments, analyses et services de la clinique.</p>
+            </div>
+            {lowStockItems.length > 0 && (
+              <span className="px-4 py-2 bg-red-50 border border-red-200 text-red-700 rounded-2xl font-bold text-xs animate-bounce">
+                ⚠️ {lowStockItems.length} Articles en alerte stock
+              </span>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400 text-xs uppercase font-black tracking-wider">
+                  <th className="py-4">Nom de l'Article</th>
+                  <th className="py-4">Catégorie</th>
+                  <th className="py-4">Prix (FCFA)</th>
+                  <th className="py-4">Stock Actuel</th>
+                  <th className="py-4">Seuil Minimum</th>
+                  <th className="py-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {catalogItems.map(item => {
+                  const isEditing = editingItemId === item.id;
+                  const isLowStock = item.stock <= item.minStock;
+                  return (
+                    <tr key={item.id} className={`hover:bg-slate-50/50 transition-colors ${isLowStock ? 'bg-red-50/10' : ''}`}>
+                      <td className="py-4 font-bold text-slate-800">
+                        {item.name}
+                        {isLowStock && (
+                          <span className="ml-2 text-[9px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-black uppercase">
+                            Faible
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 text-xs font-bold uppercase text-slate-400">{item.category || 'Général'}</td>
+                      <td className="py-4 font-black">
+                        {isEditing ? (
+                          <Input 
+                            type="number" 
+                            value={editPrice} 
+                            onChange={e => setEditPrice(e.target.value)} 
+                            className="w-24 h-9 text-sm"
+                          />
+                        ) : (
+                          `${item.price.toLocaleString()} FCFA`
+                        )}
+                      </td>
+                      <td className="py-4 font-medium">
+                        {isEditing ? (
+                          <Input 
+                            type="number" 
+                            value={editStock} 
+                            onChange={e => setEditStock(e.target.value)} 
+                            className="w-20 h-9 text-sm"
+                          />
+                        ) : (
+                          item.stock
+                        )}
+                      </td>
+                      <td className="py-4 text-slate-500">
+                        {isEditing ? (
+                          <Input 
+                            type="number" 
+                            value={editMinStock} 
+                            onChange={e => setEditMinStock(e.target.value)} 
+                            className="w-20 h-9 text-sm"
+                          />
+                        ) : (
+                          item.minStock
+                        )}
+                      </td>
+                      <td className="py-4 text-center">
+                        {isEditing ? (
+                          <div className="flex justify-center gap-2">
+                            <Button 
+                              onClick={() => handleUpdateStock(item.id)} 
+                              className="size-9 bg-emerald-600 text-white rounded-lg flex items-center justify-center p-0"
+                            >
+                              <Check size={16} />
+                            </Button>
+                            <Button 
+                              onClick={() => setEditingItemId(null)} 
+                              variant="outline" 
+                              className="size-9 rounded-lg flex items-center justify-center p-0"
+                            >
+                              X
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button 
+                            onClick={() => startEditItem(item)} 
+                            variant="outline" 
+                            className="h-9 px-3 rounded-lg text-xs font-bold"
+                          >
+                            Modifier
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : activeTab === 'users' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
@@ -190,9 +373,16 @@ export const AdminDashboard: React.FC = () => {
                   <Label>Rôle</Label>
                   <select value={newRole} onChange={e => setNewRole(e.target.value)} className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50 px-4">
                     <option value="admin">Administrateur Global</option>
-                    <option value="reception">Réception</option><option value="nurse">Infirmier(e)</option><option value="doctor">Docteur</option>
-                    <option value="lab">Laboratoire</option><option value="pharmacy">Pharmacie</option><option value="accounting">Comptabilité</option>
-                    <option value="cashier">Caissier</option><option value="hospitalization">Hospitalisation</option>
+                    <option value="reception">Réception</option>
+                    <option value="nurse">Infirmier(e)</option>
+                    <option value="doctor">Docteur</option>
+                    <option value="lab">Laboratoire</option>
+                    <option value="radiology">Radiologie</option>
+                    <option value="surgery">Bloc Chirurgical</option>
+                    <option value="pharmacy">Pharmacie</option>
+                    <option value="accounting">Comptabilité</option>
+                    <option value="cashier">Caissier</option>
+                    <option value="hospitalization">Hospitalisation</option>
                   </select>
                 </div>
                 {newRole === 'admin' ? (
@@ -276,6 +466,156 @@ function LogItem({ icon, title, desc, time }: any) {
       <div className="flex-1">
         <div className="flex justify-between"><h5 className="font-bold text-sm">{title}</h5><span className="text-[10px] text-white/30">{time}</span></div>
         <p className="text-xs text-white/50">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function WorkstationCheckItem({ label, checked }: { label: string, checked?: boolean }) {
+  return (
+    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+      <div className={`size-5 rounded-full flex items-center justify-center ${checked ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
+        <Check size={12} />
+      </div>
+      <span className="text-xs font-bold text-slate-700">{label}</span>
+    </div>
+  );
+}
+
+function SVGLineChart({ data, dataKey, color, label }: { data: any[], dataKey: string, color: string, label: string }) {
+  if (!data || data.length === 0) return <div className="h-48 flex items-center justify-center text-slate-400">Aucune donnée historique</div>;
+
+  const width = 500;
+  const height = 150;
+  const padding = 25;
+
+  const maxVal = Math.max(...data.map(d => d[dataKey]), 1);
+
+  // Generate points
+  const points = data.map((d, i) => {
+    const x = padding + (i / (data.length - 1)) * (width - padding * 2);
+    const y = height - padding - (d[dataKey] / maxVal) * (height - padding * 2);
+    return { x, y, val: d[dataKey], label: d.day };
+  });
+
+  // Generate SVG path string (curved line using cubic bezier)
+  const pathD = points.reduce((acc, p, i) => {
+    if (i === 0) return `M ${p.x} ${p.y}`;
+    const prev = points[i - 1];
+    const cpX1 = prev.x + (p.x - prev.x) / 2;
+    const cpY1 = prev.y;
+    const cpX2 = prev.x + (p.x - prev.x) / 2;
+    const cpY2 = p.y;
+    return `${acc} C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p.x} ${p.y}`;
+  }, '');
+
+  // Path for the closed area under the curve
+  const areaD = points.length > 0 
+    ? `${pathD} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z` 
+    : '';
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">{label}</h4>
+        <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full">
+          Max: {dataKey === 'revenue' ? `${maxVal.toLocaleString()} FCFA` : `${maxVal} Patients`}
+        </span>
+      </div>
+      <div className="relative bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
+          <defs>
+            <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {/* Grid lines */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
+            const y = padding + ratio * (height - padding * 2);
+            return (
+              <line
+                key={index}
+                x1={padding}
+                y1={y}
+                x2={width - padding}
+                y2={y}
+                stroke="#e2e8f0"
+                strokeDasharray="4"
+                strokeWidth="1"
+              />
+            );
+          })}
+
+          {/* Area Under Curve */}
+          {areaD && <path d={areaD} fill={`url(#gradient-${dataKey})`} />}
+
+          {/* The Curve Line */}
+          {pathD && (
+            <motion.path
+              d={pathD}
+              fill="none"
+              stroke={color}
+              strokeWidth="3"
+              strokeLinecap="round"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+            />
+          )}
+
+          {/* Data Points */}
+          {points.map((p, i) => (
+            <g key={i} className="group/point">
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r="4"
+                fill="#ffffff"
+                stroke={color}
+                strokeWidth="2.5"
+                className="transition-all duration-200 cursor-pointer hover:r-6"
+              />
+              {/* Tooltip on hover */}
+              <g className="opacity-0 group-hover/point:opacity-100 transition-opacity duration-200">
+                <rect
+                  x={p.x - 30}
+                  y={p.y - 30}
+                  width="60"
+                  height="20"
+                  rx="5"
+                  fill="#1e293b"
+                />
+                <text
+                  x={p.x}
+                  y={p.y - 17}
+                  fill="#ffffff"
+                  fontSize="8"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                >
+                  {dataKey === 'revenue' ? `${p.val / 1000}k` : p.val}
+                </text>
+              </g>
+            </g>
+          ))}
+
+          {/* X Axis Labels */}
+          {points.map((p, i) => (
+            <text
+              key={i}
+              x={p.x}
+              y={height - 2}
+              fill="#94a3b8"
+              fontSize="8"
+              fontWeight="bold"
+              textAnchor="middle"
+            >
+              {p.label}
+            </text>
+          ))}
+        </svg>
       </div>
     </div>
   );

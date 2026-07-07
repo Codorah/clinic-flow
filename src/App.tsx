@@ -14,7 +14,8 @@ import {
   PharmacyDashboard,
   CashierDashboard,
   HospitalDashboard,
-  AccountingDashboard
+  AccountingDashboard,
+  SurgeryDashboard
 } from './components/dashboards/SecondaryDashboards';
 import { PatientHistory } from './components/PatientHistory';
 
@@ -49,6 +50,7 @@ export default function App() {
       case 'doctor': return <DoctorDashboard />;
       case 'lab': return <LabDashboard />;
       case 'radiology': return <RadiologyDashboard />;
+      case 'surgery': return <SurgeryDashboard />;
       case 'pharmacy': return <PharmacyDashboard />;
       case 'cashier': return <CashierDashboard />;
       case 'hospitalization': return <HospitalDashboard />;

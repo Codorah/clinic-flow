@@ -19,7 +19,8 @@ import {
   CheckCircle2,
   Sparkles,
   Activity,
-  Lock
+  Lock,
+  Scissors
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/src/components/ui/button";
@@ -31,6 +32,7 @@ const workstations: { id: UserRole; label: string; icon: React.ReactNode; color:
   { id: "nurse",           label: "Infirmerie",     icon: <Heart size={24} />,       color: "bg-rose-500"    },
   { id: "lab",             label: "Laboratoire",    icon: <FlaskConical size={24} />,color: "bg-amber-500"   },
   { id: "radiology",       label: "Radiologie",     icon: <Scan size={24} />,        color: "bg-violet-500"  },
+  { id: "surgery",         label: "Bloc Chirurgical",icon: <Scissors size={24} />,   color: "bg-red-500"     },
   { id: "pharmacy",        label: "Pharmacie",      icon: <Pill size={24} />,        color: "bg-purple-500"  },
   { id: "accounting",      label: "Comptabilité",   icon: <Calculator size={24} />,  color: "bg-slate-700"   },
   { id: "cashier",         label: "Caisse",         icon: <Wallet size={24} />,      color: "bg-cyan-500"    },

@@ -14,7 +14,8 @@ import {
   ClipboardCheck,
   Receipt,
   TrendingUp,
-  Scan
+  Scan,
+  Scissors
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -92,11 +93,27 @@ function QueueView({ title, icon, items, actionLabel, onAction }: { title: strin
 export const LabDashboard: React.FC = () => {
   const { apiFetch } = useAuth();
   const [queue, setQueue] = useState<Patient[]>([]);
+  const [completedToday, setCompletedToday] = useState(0);
 
   const fetchQueue = async () => {
-    const res = await apiFetch('/api/patients');
-    const data = await res.json();
-    setQueue(Array.isArray(data) ? data.filter((p: any) => p.status === 'LAB_WAITING') : []);
+    try {
+      const res = await apiFetch('/api/patients');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setQueue(data.filter((p: any) => p.status === 'LAB_WAITING'));
+        const todayStr = new Date().toDateString();
+        const completed = data.filter((p: any) => 
+          p.status !== 'LAB_WAITING' && 
+          p.status !== 'RECEPTION' &&
+          p.status !== 'NURSE_QUEUE' &&
+          p.status !== 'NURSE_CHECKING' &&
+          new Date(p.updatedAt || p.createdAt).toDateString() === todayStr
+        ).length;
+        setCompletedToday(completed);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
@@ -115,8 +132,32 @@ export const LabDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <FlowGuide currentStepId="secondary" />
+
+      {/* Lab Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="size-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+            <Clock size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Analyses en attente</p>
+            <p className="text-2xl font-black text-slate-800">{queue.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="size-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+            <CheckCircle2 size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Analyses terminées aujourd'hui</p>
+            <p className="text-2xl font-black text-slate-800">{completedToday}</p>
+          </div>
+        </div>
+      </div>
+
       <QueueView
         title="File d'attente Laboratoire"
         icon={<FlaskConical />}
@@ -132,11 +173,27 @@ export const LabDashboard: React.FC = () => {
 export const RadiologyDashboard: React.FC = () => {
   const { apiFetch } = useAuth();
   const [queue, setQueue] = useState<Patient[]>([]);
+  const [completedToday, setCompletedToday] = useState(0);
 
   const fetchQueue = async () => {
-    const res = await apiFetch('/api/patients');
-    const data = await res.json();
-    setQueue(Array.isArray(data) ? data.filter((p: any) => p.status === 'RADIOLOGY_WAITING') : []);
+    try {
+      const res = await apiFetch('/api/patients');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setQueue(data.filter((p: any) => p.status === 'RADIOLOGY_WAITING'));
+        const todayStr = new Date().toDateString();
+        const completed = data.filter((p: any) => 
+          p.status !== 'RADIOLOGY_WAITING' && 
+          p.status !== 'RECEPTION' &&
+          p.status !== 'NURSE_QUEUE' &&
+          p.status !== 'NURSE_CHECKING' &&
+          new Date(p.updatedAt || p.createdAt).toDateString() === todayStr
+        ).length;
+        setCompletedToday(completed);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
@@ -155,8 +212,32 @@ export const RadiologyDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <FlowGuide currentStepId="radiology" />
+
+      {/* Radiology Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="size-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+            <Clock size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Examens en attente</p>
+            <p className="text-2xl font-black text-slate-800">{queue.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="size-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center">
+            <CheckCircle2 size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Examens terminés aujourd'hui</p>
+            <p className="text-2xl font-black text-slate-800">{completedToday}</p>
+          </div>
+        </div>
+      </div>
+
       <QueueView
         title="File d'attente Radiologie"
         icon={<Scan />}
@@ -172,11 +253,24 @@ export const RadiologyDashboard: React.FC = () => {
 export const PharmacyDashboard: React.FC = () => {
   const { apiFetch } = useAuth();
   const [queue, setQueue] = useState<Patient[]>([]);
+  const [lowStockItems, setLowStockItems] = useState<any[]>([]);
 
   const fetchQueue = async () => {
-    const res = await apiFetch('/api/patients');
-    const data = await res.json();
-    setQueue(Array.isArray(data) ? data.filter((p: any) => p.status === 'PHARMACY_WAITING') : []);
+    try {
+      const [patientsRes, catalogRes] = await Promise.all([
+        apiFetch('/api/patients'),
+        apiFetch('/api/catalog')
+      ]);
+      const data = await patientsRes.json();
+      setQueue(Array.isArray(data) ? data.filter((p: any) => p.status === 'PHARMACY_WAITING') : []);
+
+      const catalogData = await catalogRes.json();
+      if (Array.isArray(catalogData)) {
+        setLowStockItems(catalogData.filter((item: any) => item.stock <= item.minStock));
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
@@ -195,8 +289,26 @@ export const PharmacyDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <FlowGuide currentStepId="secondary" />
+
+      {/* Low stock alerts panel */}
+      {lowStockItems.length > 0 && (
+        <div className="p-6 bg-red-50 border border-red-200 rounded-3xl text-red-800 space-y-2">
+          <h4 className="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+            ⚠️ Alerte Rupture de Stock Médicaments
+          </h4>
+          <p className="text-xs text-red-600 font-medium">Les articles suivants ont atteint ou dépassé leur seuil d'alerte :</p>
+          <div className="flex flex-wrap gap-2 pt-2">
+            {lowStockItems.map(item => (
+              <span key={item.id} className="px-3 py-1 bg-red-100 border border-red-200 text-red-700 rounded-xl text-[10px] font-black uppercase">
+                {item.name} ({item.stock} restants)
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <QueueView
         title="Dispensaire Pharmacie"
         icon={<Pill />}
@@ -212,11 +324,31 @@ export const PharmacyDashboard: React.FC = () => {
 export const CashierDashboard: React.FC = () => {
   const { apiFetch } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [revenueToday, setRevenueToday] = useState(0);
+  const [pendingRevenue, setPendingRevenue] = useState(0);
 
   const fetchInvoices = async () => {
-    const res = await apiFetch('/api/invoices');
-    const data = await res.json();
-    setInvoices(Array.isArray(data) ? data.filter((inv: any) => inv.status === 'pending') : []);
+    try {
+      const res = await apiFetch('/api/invoices');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setInvoices(data.filter((inv: any) => inv.status === 'pending'));
+
+        // Calculate stats
+        const todayStr = new Date().toDateString();
+        const paidToday = data.filter((inv: any) => 
+          inv.status === 'paid' && 
+          new Date(inv.updatedAt || inv.createdAt).toDateString() === todayStr
+        ).reduce((acc: number, inv: any) => acc + inv.amount, 0);
+        setRevenueToday(paidToday);
+
+        const pending = data.filter((inv: any) => inv.status === 'pending')
+          .reduce((acc: number, inv: any) => acc + inv.amount, 0);
+        setPendingRevenue(pending);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
@@ -240,8 +372,42 @@ export const CashierDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <FlowGuide currentStepId="billing" />
+      
+      {/* Cashier KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="size-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+            <DollarSign size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recette du Jour</p>
+            <p className="text-2xl font-black text-slate-800">{revenueToday.toLocaleString()} FCFA</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="size-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
+            <Clock size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Encours Factures</p>
+            <p className="text-2xl font-black text-slate-800">{pendingRevenue.toLocaleString()} FCFA</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="size-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+            <Receipt size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Factures en attente</p>
+            <p className="text-2xl font-black text-slate-800">{invoices.length}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center gap-3 mb-8">
         <Receipt className="text-emerald-600" size={32} />
         <h2 className="text-2xl font-black text-slate-800 tracking-tight">Facturation & Paiements</h2>
@@ -297,9 +463,13 @@ export const HospitalDashboard: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
 
   const fetchQueue = async () => {
-    const res = await apiFetch('/api/patients');
-    const data = await res.json();
-    setPatients(Array.isArray(data) ? data.filter((p: any) => p.status === 'HOSPITALIZED') : []);
+    try {
+      const res = await apiFetch('/api/patients');
+      const data = await res.json();
+      setPatients(Array.isArray(data) ? data.filter((p: any) => p.status === 'HOSPITALIZED') : []);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
@@ -308,9 +478,34 @@ export const HospitalDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const totalBeds = 20;
+  const occupancyPercentage = Math.round((patients.length / totalBeds) * 100);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <FlowGuide currentStepId="secondary" />
+
+      {/* Bed Occupancy Card */}
+      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h4 className="text-xl font-black text-slate-800">Taux d'Occupation des Lits</h4>
+            <p className="text-xs text-slate-400 font-medium">Capacité totale autorisée de l'établissement : 20 lits.</p>
+          </div>
+          <span className="text-lg font-black text-emerald-700 bg-emerald-50 px-4 py-1.5 rounded-2xl">
+            {patients.length} / {totalBeds} Occupés ({occupancyPercentage}%)
+          </span>
+        </div>
+
+        <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+          <motion.div 
+            initial={{ width: 0 }} 
+            animate={{ width: `${occupancyPercentage}%` }} 
+            className="h-full bg-emerald-600 rounded-full"
+          />
+        </div>
+      </div>
+
       <QueueView
         title="Salles d'Hospitalisation"
         icon={<Hospital />}
@@ -408,6 +603,94 @@ export const AccountingDashboard: React.FC = () => {
                 <p className="font-black text-lg text-slate-800">{inv.amount.toLocaleString()} FCFA</p>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Surgery / Surgical Block Dashboard
+export const SurgeryDashboard: React.FC = () => {
+  const { apiFetch } = useAuth();
+  const [queue, setQueue] = useState<Patient[]>([]);
+
+  const fetchQueue = async () => {
+    const res = await apiFetch('/api/patients');
+    const data = await res.json();
+    setQueue(Array.isArray(data) ? data.filter((p: any) => p.status === 'SURGERY_WAITING') : []);
+  };
+
+  useEffect(() => {
+    fetchQueue();
+    const interval = setInterval(fetchQueue, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const updateStatus = async (id: string, status: string) => {
+    await apiFetch(`/api/patients/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    fetchQueue();
+  };
+
+  return (
+    <div className="space-y-6">
+      <FlowGuide currentStepId="secondary" />
+      
+      <div className="flex items-center gap-3 mb-8">
+        <div className="size-12 rounded-2xl bg-red-100 flex items-center justify-center text-red-700 shadow-sm shadow-red-50">
+          <Scissors size={24} />
+        </div>
+        <h2 className="text-2xl font-black text-slate-800 tracking-tight">File d'attente Bloc Chirurgical</h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <AnimatePresence>
+          {queue.map(p => (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm group hover:border-red-300 transition-all flex flex-col justify-between"
+            >
+              <div className="space-y-4 mb-6">
+                <div className="flex justify-between items-start">
+                  <div className="size-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
+                    <UserCheck size={24} />
+                  </div>
+                  <Clock size={16} className="text-slate-300" />
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-black text-slate-800 leading-tight">{p.firstName} {p.lastName}</h4>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Intervention chirurgicale requise</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Button
+                  onClick={() => updateStatus(p.id, 'HOSPITALIZED')}
+                  className="w-full h-11 rounded-xl bg-red-600 text-white font-bold text-[10px] uppercase tracking-widest hover:bg-red-700 border border-transparent shadow-sm shadow-red-100"
+                >
+                  Opérer et Hospitaliser
+                </Button>
+                <Button
+                  onClick={() => updateStatus(p.id, 'CASHIER_WAITING')}
+                  className="w-full h-11 rounded-xl bg-slate-50 text-slate-700 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 border border-slate-100"
+                >
+                  Opérer externe & Facturer
+                </Button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {queue.length === 0 && (
+          <div className="col-span-full py-20 text-center text-slate-300 bg-slate-50/50 rounded-[3rem] border-2 border-dashed border-slate-100">
+            <ClipboardCheck size={48} className="mx-auto mb-4 opacity-20" />
+            <p className="text-sm font-bold italic">Aucun patient en attente d'opération</p>
           </div>
         )}
       </div>

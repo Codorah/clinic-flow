@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type UserRole = 'admin' | 'reception' | 'nurse' | 'doctor' | 'lab' | 'radiology' | 'pharmacy' | 'accounting' | 'cashier' | 'hospitalization' | 'records';
+export type UserRole = 'admin' | 'reception' | 'nurse' | 'doctor' | 'lab' | 'radiology' | 'pharmacy' | 'accounting' | 'cashier' | 'hospitalization' | 'records' | 'surgery';
 
 interface AuthContextType {
   user: any;

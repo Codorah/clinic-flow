@@ -59,6 +59,8 @@ model CatalogItem {
   name      String
   price     Float
   category  String?
+  stock     Int      @default(100)
+  minStock  Int      @default(10)
   createdAt DateTime @default(now())
 }
 

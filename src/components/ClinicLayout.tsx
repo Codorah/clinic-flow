@@ -19,7 +19,8 @@ import {
   LayoutDashboard,
   Hospital,
   Calculator,
-  History
+  History,
+  Scissors
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -38,6 +39,7 @@ export const ClinicLayout: React.FC<ClinicLayoutProps> = ({ children }) => {
     { role: 'doctor', icon: <Stethoscope size={20} />, label: 'Consultation', id: 'doctor' },
     { role: 'lab', icon: <FlaskConical size={20} />, label: 'Laboratoire', id: 'lab' },
     { role: 'radiology', icon: <Scan size={20} />, label: 'Radiologie', id: 'radiology' },
+    { role: 'surgery', icon: <Scissors size={20} />, label: 'Bloc Chirurgical', id: 'surgery' },
     { role: 'pharmacy', icon: <Pill size={20} />, label: 'Pharmacie', id: 'pharmacy' },
     { role: 'accounting', icon: <Calculator size={20} />, label: 'Comptabilité', id: 'accounting' },
     { role: 'cashier', icon: <Wallet size={20} />, label: 'Caisse', id: 'cashier' },
@@ -45,7 +47,7 @@ export const ClinicLayout: React.FC<ClinicLayoutProps> = ({ children }) => {
   ];
 
   const filteredMenu = menuItems.filter(item => {
-    if (item.id === 'records') return role === 'admin' || role === 'doctor';
+    if (item.id === 'records') return role === 'admin' || role === 'doctor' || role === 'reception';
     return item.role === 'all' || item.role === role || role === 'admin';
   });
 
@@ -55,6 +57,7 @@ export const ClinicLayout: React.FC<ClinicLayoutProps> = ({ children }) => {
     doctor: 'Consultation',
     lab: 'Laboratoire',
     radiology: 'Radiologie',
+    surgery: 'Bloc Chirurgical',
     pharmacy: 'Pharmacie',
     accounting: 'Comptabilité',
     cashier: 'Caisse',

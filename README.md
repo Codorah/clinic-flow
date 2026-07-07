@@ -1,25 +1,30 @@
 # Clinic Flow 🏥
 
-Bienvenue sur **Clinic Flow**, une application web moderne et intégrée de gestion clinique. Cette application a été conçue pour optimiser le flux de travail des professionnels de santé dans un environnement clinique (médecins, infirmières, pharmaciens, laboratoires, etc.).
+Bienvenue sur **Clinic Flow**, une application web moderne et intégrée de gestion clinique. Cette application a été conçue pour optimiser le flux de travail des professionnels de santé dans un environnement clinique multi-postes.
 
 ## 🚀 Fonctionnalités Principales
 
-- **Authentification Sécurisée & Basée sur les Rôles** : 
-  - Accès Administrateur par mot de passe.
-  - Accès aux postes cliniques par code PIN rapide.
-- **Gestion Complète des Patients** : Enregistrement, suivi du statut et historiques.
-- **Tableaux de Bord Spécifiques** :
-  - **Réception** : Accueil, enregistrement, facturation.
-  - **Consultation (Médecin)** : Diagnostic, prescriptions.
-  - **Infirmerie** : Prise de constantes, préparation.
-  - **Laboratoire & Pharmacie** : Suivi des examens et délivrance de médicaments.
-- **Catalogue & Facturation** : Gestion des tarifs des actes médicaux et suivi financier.
+- **10 Postes Cliniques Intégrés** : 
+  - **Réception** : Enregistrement rapide, file d'attente, recherche globale avancée avec filtres d'âge et de statut.
+  - **Infirmerie** : Prise de constantes vitales, observations et tableau de statistiques journalier avec alertes de fièvre.
+  - **Consultation (Médecin)** : Consultation médicale, saisie de diagnostic, prescription d'ordonnances et aiguillage vers les spécialités (y compris le Bloc Chirurgical).
+  - **Laboratoire** : Prise en charge des examens sanguins et urinaires, saisie de résultats.
+  - **Radiologie & Imagerie** : Suivi des prescriptions d'examens d'imagerie.
+  - **Bloc Chirurgical** : File d'attente chirurgicale dédiée avec aiguillage vers l'hospitalisation ou la facturation.
+  - **Hospitalisation** : Gestion de l'occupation des lits avec indicateurs visuels de capacité en temps réel (seuil de 20 lits).
+  - **Pharmacie** : Distribution de médicaments avec alerte visuelle de rupture/seuil critique de stock.
+  - **Caisse / Facturation** : Génération automatique de factures, encaissement et statistiques de recettes.
+  - **Comptabilité** : Suivi du grand livre clinique, encaissements consolidés et encours.
+- **Tableau de Bord Administratif Premium** :
+  - **Courbes Temporelles Réelles (SVG)** : Visualisation interactive (avec tooltips) de la fréquentation des patients et de la courbe des revenus sur 7 jours.
+  - **Gestion de l'Inventaire & des Tarifs** : Modification in-line des prix de vente, des stocks physiques et des seuils d'alerte (`minStock`) des services et médicaments.
+  - **Gestion du Personnel** : Annuaire des profils actifs avec possibilité de création/suppression de comptes et attribution de rôles/PINs.
 
 ## 🛠️ Stack Technique
 
 - **Frontend** : React 19, Vite, Tailwind CSS, Radix UI, Framer Motion.
 - **Backend** : Node.js, Express.js.
-- **Base de données** : PostgreSQL (avec Prisma ORM).
+- **Base de données** : SQLite / PostgreSQL (avec Prisma ORM).
 - **Déploiement** : Render (Web Service + Base de données PostgreSQL).
 
 ## ⚙️ Installation & Lancement Local
@@ -36,7 +41,7 @@ Bienvenue sur **Clinic Flow**, une application web moderne et intégrée de gest
    ```
 
 3. **Configurer l'environnement**
-   Copiez le fichier `.env.example` (s'il existe) vers `.env` et configurez votre `DATABASE_URL` (SQLite pour le dev, PostgreSQL pour la prod).
+   Copiez le fichier `.env.example` vers `.env` et configurez votre `DATABASE_URL` (SQLite par défaut en dev).
 
 4. **Initialiser la base de données**
    ```bash
@@ -55,11 +60,16 @@ Lors du premier lancement (après le seed), utilisez ces identifiants :
 
 - **Super Administrateur** : `ceo.codorah@gmail.com` / Mot de passe : `admin123`
 - **Postes cliniques (PINs)** :
-  - Réception : `1111`
-  - Consultation : `2222`
-  - Infirmerie : `3333`
-  - Laboratoire : `4444`
-  - Pharmacie : `5555`
+  - **Bloc Chirurgical** : `1010`
+  - **Réception** : `1111`
+  - **Consultation** : `2222`
+  - **Infirmerie** : `3333`
+  - **Laboratoire** : `4444`
+  - **Pharmacie** : `5555`
+  - **Comptabilité** : `6666`
+  - **Caisse / Facturation** : `7777`
+  - **Hospitalisation** : `8888`
+  - **Radiologie** : `9999`
 
 > **Note de sécurité** : N'oubliez pas de modifier ces identifiants pour tout déploiement en production !
 

@@ -25,6 +25,11 @@ export const NurseDashboard: React.FC = () => {
   const [vitals, setVitals] = useState({ temp: '', bp: '', hr: '', concerns: '' });
   const [showNotification, setShowNotification] = useState<string | null>(null);
 
+  // Vitals stats states
+  const [checkedToday, setCheckedToday] = useState(0);
+  const [avgTemp, setAvgTemp] = useState('--');
+  const [feverCount, setFeverCount] = useState(0);
+
   const fetchQueue = async () => {
     try {
       const res = await apiFetch('/api/patients');
@@ -40,6 +45,27 @@ export const NurseDashboard: React.FC = () => {
 
       const active = data.find((p: any) => p.status === 'NURSE_CHECKING' && p.assignedNurseId === user?.id);
       setActivePatient(active || null);
+
+      // Calculate stats today
+      const todayStr = new Date().toDateString();
+      const todayPatients = data.filter((p: any) => {
+        if (!p.vitals || !p.vitals.timestamp) return false;
+        return new Date(p.vitals.timestamp).toDateString() === todayStr;
+      });
+
+      setCheckedToday(todayPatients.length);
+
+      const temps = todayPatients.map((p: any) => parseFloat(p.vitals.temp)).filter((t: number) => !isNaN(t));
+      if (temps.length > 0) {
+        const sum = temps.reduce((acc: number, val: number) => acc + val, 0);
+        setAvgTemp((sum / temps.length).toFixed(1));
+      } else {
+        setAvgTemp('--');
+      }
+
+      const fevers = temps.filter((t: number) => t >= 38.0).length;
+      setFeverCount(fevers);
+
     } catch (e) {
       console.error(e);
     }
@@ -103,6 +129,39 @@ export const NurseDashboard: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Vitals daily stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-emerald-300 transition-colors">
+          <div className="size-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+            <Users size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Patients Traités (Aujourd'hui)</p>
+            <p className="text-2xl font-black text-slate-800">{checkedToday}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-emerald-300 transition-colors">
+          <div className="size-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center animate-pulse">
+            <Thermometer size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Température Moyenne</p>
+            <p className="text-2xl font-black text-slate-800">{avgTemp} °C</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 hover:border-emerald-300 transition-colors">
+          <div className="size-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center">
+            <AlertCircle size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Alertes Fièvre (&gt;= 38.0°C)</p>
+            <p className={`text-2xl font-black ${feverCount > 0 ? 'text-red-600 animate-bounce' : 'text-slate-800'}`}>{feverCount}</p>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">

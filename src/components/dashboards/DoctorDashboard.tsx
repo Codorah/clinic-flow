@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  DollarSign
+  DollarSign,
+  Scissors
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FlowGuide } from '../FlowGuide';
@@ -199,12 +200,13 @@ export const DoctorDashboard: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-8">
-                      <Button type="button" className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('LAB_WAITING')}><FlaskConical className="mr-2" size={16} /> Labo</Button>
-                      <Button type="button" className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('RADIOLOGY_WAITING')}><Scan className="mr-2" size={16} /> Radio</Button>
-                      <Button type="button" className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('PHARMACY_WAITING')}><Pill className="mr-2" size={16} /> Pharmacie</Button>
-                      <Button type="button" className="h-14 rounded-xl" variant="outline" onClick={() => handleComplete('HOSPITALIZED')}><Hospital className="mr-2" size={16} /> Hospit.</Button>
-                      <Button type="button" className="h-14 rounded-xl bg-emerald-600 text-white" onClick={() => handleComplete('CASHIER_WAITING')}><CheckCircle2 className="mr-2" size={16} /> Terminer</Button>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mt-8">
+                      <Button type="button" className="h-14 rounded-xl px-1 font-bold text-xs" variant="outline" onClick={() => handleComplete('LAB_WAITING')}><FlaskConical className="mr-1" size={14} /> Labo</Button>
+                      <Button type="button" className="h-14 rounded-xl px-1 font-bold text-xs" variant="outline" onClick={() => handleComplete('RADIOLOGY_WAITING')}><Scan className="mr-1" size={14} /> Radio</Button>
+                      <Button type="button" className="h-14 rounded-xl px-1 font-bold text-xs" variant="outline" onClick={() => handleComplete('PHARMACY_WAITING')}><Pill className="mr-1" size={14} /> Pharma</Button>
+                      <Button type="button" className="h-14 rounded-xl px-1 font-bold text-xs" variant="outline" onClick={() => handleComplete('SURGERY_WAITING')}><Scissors className="mr-1" size={14} /> Chirurgie</Button>
+                      <Button type="button" className="h-14 rounded-xl px-1 font-bold text-xs" variant="outline" onClick={() => handleComplete('HOSPITALIZED')}><Hospital className="mr-1" size={14} /> Hospit.</Button>
+                      <Button type="button" className="h-14 rounded-xl px-1 font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleComplete('CASHIER_WAITING')}><CheckCircle2 className="mr-1" size={14} /> Terminer</Button>
                     </div>
                   </div>
                 </div>

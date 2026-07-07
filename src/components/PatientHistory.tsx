@@ -28,24 +28,23 @@ interface Patient {
 export const PatientHistory: React.FC = () => {
   const { apiFetch } = useAuth();
   const [search, setSearch] = useState('');
-  const [patients, setPatients] = useState<Patient[]>([]);
+  const [allPatients, setAllPatients] = useState<Patient[]>([]);
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const performSearch = async () => {
-    if (!search) return;
+  // Filters State
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [ageFilter, setAgeFilter] = useState('ALL');
+
+  const loadPatients = async () => {
     setLoading(true);
     try {
       const res = await apiFetch('/api/patients');
       const data = await res.json();
-      const filtered = (Array.isArray(data) ? data : []).filter((p: any) =>
-        p.firstName.toLowerCase().includes(search.toLowerCase()) || 
-        p.lastName.toLowerCase().includes(search.toLowerCase()) ||
-        p.id.includes(search.toLowerCase()) ||
-        p.age?.toString().includes(search) ||
-        p.treatments?.some((t: any) => t.diagnosis?.toLowerCase().includes(search.toLowerCase()))
-      );
-      setPatients(filtered);
+      if (Array.isArray(data)) {
+        setAllPatients(data);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -53,54 +52,141 @@ export const PatientHistory: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    loadPatients();
+  }, []);
+
+  useEffect(() => {
+    let result = [...allPatients];
+
+    // Text search filter
+    if (search.trim()) {
+      const term = search.toLowerCase();
+      result = result.filter(p =>
+        p.firstName.toLowerCase().includes(term) ||
+        p.lastName.toLowerCase().includes(term) ||
+        p.id.toLowerCase().includes(term) ||
+        p.phone?.toLowerCase().includes(term) ||
+        p.treatments?.some(t => t.diagnosis?.toLowerCase().includes(term))
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'ALL') {
+      result = result.filter(p => p.status === statusFilter);
+    }
+
+    // Age filter
+    if (ageFilter !== 'ALL') {
+      result = result.filter(p => {
+        if (!p.age) return false;
+        if (ageFilter === 'CHILD') return p.age < 18;
+        if (ageFilter === 'ADULT') return p.age >= 18 && p.age <= 60;
+        if (ageFilter === 'SENIOR') return p.age > 60;
+        return true;
+      });
+    }
+
+    setFilteredPatients(result);
+  }, [search, allPatients, statusFilter, ageFilter]);
+
+  const statusLabels: Record<string, string> = {
+    RECEPTION: 'Enregistrement',
+    NURSE_QUEUE: 'Infirmerie (File)',
+    NURSE_CHECKING: 'Infirmerie (Soin)',
+    DOCTOR_QUEUE: 'Médecin (File)',
+    DOCTOR_CONSULTING: 'Médecin (Consult)',
+    LAB_WAITING: 'Laboratoire',
+    RADIOLOGY_WAITING: 'Radiologie',
+    SURGERY_WAITING: 'Bloc Chirurgical',
+    PHARMACY_WAITING: 'Pharmacie',
+    HOSPITALIZED: 'Hospitalisé',
+    CASHIER_WAITING: 'Facturation',
+    DISCHARGED: 'Sorti / Congédié'
+  };
+
   return (
     <div className="space-y-8">
       <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3 mb-8">
-          <History className="text-emerald-600" />
-          <h2 className="text-2xl font-black text-slate-800">Archives de l'Établissement</h2>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <History className="text-emerald-600" />
+            <h2 className="text-2xl font-black text-slate-800 animate-pulse">Archives de l'Établissement</h2>
+          </div>
+          <button 
+            onClick={loadPatients}
+            className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs flex items-center gap-2"
+          >
+            Actualiser les dossiers
+          </button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
+        {/* Filters Panel */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="relative md:col-span-2">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && performSearch()}
-              placeholder="Nom, ID ou Maladie..."
-              className="w-full h-14 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-emerald-500 px-12 font-bold transition-all outline-none"
+              placeholder="Rechercher par nom, téléphone, diagnostic..."
+              className="w-full h-12 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:bg-white px-12 font-bold text-sm transition-all outline-none"
             />
           </div>
-          <button 
-            onClick={performSearch}
-            className="px-8 h-14 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-50"
-          >
-            Rechercher
-          </button>
+
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 font-bold text-sm text-slate-700 outline-none focus:border-emerald-500 focus:bg-white transition-all"
+            >
+              <option value="ALL">Tous les statuts</option>
+              {Object.entries(statusLabels).map(([key, value]) => (
+                <option key={key} value={key}>{value}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="relative">
+            <select
+              value={ageFilter}
+              onChange={(e) => setAgeFilter(e.target.value)}
+              className="w-full h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 font-bold text-sm text-slate-700 outline-none focus:border-emerald-500 focus:bg-white transition-all"
+            >
+              <option value="ALL">Tous les âges</option>
+              <option value="CHILD">Enfants (&lt; 18 ans)</option>
+              <option value="ADULT">Adultes (18 - 60 ans)</option>
+              <option value="SENIOR">Séniors (&gt; 60 ans)</option>
+            </select>
+          </div>
         </div>
 
+        {/* Patients Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {patients.map(p => (
+          {filteredPatients.map(p => (
             <button 
               key={p.id}
               onClick={() => setSelectedPatient(p)}
-              className="p-6 rounded-2xl border-2 border-slate-50 hover:border-emerald-500 bg-white text-left transition-all group"
+              className="p-6 rounded-2xl border-2 border-slate-50 hover:border-emerald-500 bg-white text-left transition-all group shadow-sm flex flex-col justify-between"
             >
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start w-full">
                 <div>
                   <h4 className="font-bold text-slate-800 group-hover:text-emerald-700">{p.firstName} {p.lastName}</h4>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {p.id.slice(0, 8)} • Age: {p.age || '?'}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">ID: {p.id.slice(0, 8)} • Age: {p.age || '?'}</p>
                 </div>
-                <div className={`text-[10px] font-black px-2 py-1 rounded bg-slate-100 uppercase ${p.status === 'DISCHARGED' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                  {p.status === 'DISCHARGED' ? 'SORTI' : p.status}
+                <div className={`text-[9px] font-black px-2 py-1 rounded-lg uppercase ${
+                  p.status === 'DISCHARGED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 
+                  p.status === 'HOSPITALIZED' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
+                  p.status === 'SURGERY_WAITING' ? 'bg-red-50 text-red-700 border border-red-100' :
+                  'bg-amber-50 text-amber-700 border border-amber-100'
+                }`}>
+                  {statusLabels[p.status] || p.status}
                 </div>
               </div>
             </button>
           ))}
           {loading && <div className="col-span-full text-center py-12 text-slate-400 italic">Accès à la base de données...</div>}
-          {patients.length === 0 && !loading && search && <div className="col-span-full text-center py-12 text-slate-400">Aucun résultat trouvé</div>}
+          {filteredPatients.length === 0 && !loading && <div className="col-span-full text-center py-12 text-slate-400">Aucun patient ne correspond aux critères.</div>}
         </div>
       </div>
 

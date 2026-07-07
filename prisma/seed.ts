@@ -30,6 +30,7 @@ async function main() {
     { username: "accounting",      pin: "6666", role: "accounting",      displayName: "Comptabilité" },
     { username: "cashier",         pin: "7777", role: "cashier",         displayName: "Caisse" },
     { username: "hospitalization", pin: "8888", role: "hospitalization", displayName: "Hospitalisation" },
+    { username: "surgery",         pin: "1010", role: "surgery",         displayName: "Bloc Chirurgical" },
   ];
 
   for (const ws of workstations) {
@@ -42,29 +43,37 @@ async function main() {
 
   // Catalogue médical — indispensable pour les consultations
   const catalog = [
-    { name: "Consultation Générale",       price: 5000,  category: "consultation" },
-    { name: "Consultation Spécialisée",    price: 10000, category: "consultation" },
-    { name: "Prise de Sang",               price: 3000,  category: "laboratoire"  },
-    { name: "Analyse Urine",               price: 2500,  category: "laboratoire"  },
-    { name: "NFS Complète",                price: 5000,  category: "laboratoire"  },
-    { name: "Test Paludisme (TDR)",        price: 2000,  category: "laboratoire"  },
-    { name: "Test Grossesse",              price: 1500,  category: "laboratoire"  },
-    { name: "Glycémie",                    price: 1500,  category: "laboratoire"  },
-    { name: "Radiographie Thorax",         price: 8000,  category: "radiologie"   },
-    { name: "Échographie Abdominale",      price: 15000, category: "radiologie"   },
-    { name: "Échographie Obstétricale",    price: 12000, category: "radiologie"   },
-    { name: "Médicaments Génériques",      price: 2000,  category: "pharmacie"    },
-    { name: "Perfusion IV (sans médic.)",  price: 5000,  category: "soins"        },
-    { name: "Pansement Simple",            price: 1500,  category: "soins"        },
-    { name: "Injection Intramusculaire",   price: 1000,  category: "soins"        },
-    { name: "Hospitalisation (par nuit)", price: 15000, category: "hospitalisation"},
-    { name: "Chirurgie Mineure",           price: 50000, category: "chirurgie"    },
+    { name: "Consultation Générale",       price: 5000,  category: "consultation",    stock: 9999, minStock: 0 },
+    { name: "Consultation Spécialisée",    price: 10000, category: "consultation",    stock: 9999, minStock: 0 },
+    { name: "Prise de Sang",               price: 3000,  category: "laboratoire",     stock: 150,  minStock: 20 },
+    { name: "Analyse Urine",               price: 2500,  category: "laboratoire",     stock: 200,  minStock: 20 },
+    { name: "NFS Complète",                price: 5000,  category: "laboratoire",     stock: 80,   minStock: 10 },
+    { name: "Test Paludisme (TDR)",        price: 2000,  category: "laboratoire",     stock: 300,  minStock: 50 },
+    { name: "Test Grossesse",              price: 1500,  category: "laboratoire",     stock: 120,  minStock: 15 },
+    { name: "Glycémie",                    price: 1500,  category: "laboratoire",     stock: 150,  minStock: 15 },
+    { name: "Radiographie Thorax",         price: 8000,  category: "radiologie",      stock: 500,  minStock: 5 },
+    { name: "Échographie Abdominale",      price: 15000, category: "radiologie",      stock: 500,  minStock: 5 },
+    { name: "Échographie Obstétricale",    price: 12000, category: "radiologie",      stock: 500,  minStock: 5 },
+    { name: "Paracétamol 500mg",           price: 1000,  category: "pharmacie",       stock: 8,    minStock: 20 }, // Low stock for testing alert
+    { name: "Amoxicilline 500mg",          price: 3500,  category: "pharmacie",       stock: 75,   minStock: 15 },
+    { name: "Ibuprofène 400mg",            price: 1500,  category: "pharmacie",       stock: 15,   minStock: 25 }, // Low stock for testing alert
+    { name: "Médicaments Génériques",      price: 2000,  category: "pharmacie",       stock: 1000, minStock: 50 },
+    { name: "Perfusion IV (sans médic.)",  price: 5000,  category: "soins",           stock: 60,   minStock: 15 },
+    { name: "Pansement Simple",            price: 1500,  category: "soins",           stock: 150,  minStock: 30 },
+    { name: "Injection Intramusculaire",   price: 1000,  category: "soins",           stock: 200,  minStock: 40 },
+    { name: "Hospitalisation (par nuit)", price: 15000, category: "hospitalisation", stock: 9999, minStock: 0 },
+    { name: "Chirurgie Mineure",           price: 50000, category: "chirurgie",       stock: 9999, minStock: 0 },
   ];
 
   for (const item of catalog) {
     const existing = await prisma.catalogItem.findFirst({ where: { name: item.name } });
     if (!existing) {
       await prisma.catalogItem.create({ data: item });
+    } else {
+      await prisma.catalogItem.update({
+        where: { id: existing.id },
+        data: { stock: item.stock, minStock: item.minStock }
+      });
     }
   }
 
