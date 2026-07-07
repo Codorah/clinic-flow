@@ -191,10 +191,75 @@ export const NurseDashboard: React.FC = () => {
                     <div className="size-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-700"><UserCheck size={32} /></div>
                     <div><h2 className="text-3xl font-black text-slate-800">{activePatient.firstName} {activePatient.lastName}</h2><p className="text-emerald-600 font-semibold">Vérification des signes vitaux</p></div>
                   </div>
+
+                  {/* Reference ranges alert box */}
+                  <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-3 gap-4 text-xs font-medium text-slate-500">
+                    <div>
+                      <p className="font-bold text-slate-700">Norme Température</p>
+                      <p>36.0°C - 37.5°C</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-700">Norme Tension</p>
+                      <p>90/60 - 120/80 mmHg</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-700">Norme Pouls</p>
+                      <p>60 - 100 bpm</p>
+                    </div>
+                  </div>
+
                   <form onSubmit={submitVitals} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2"><Label className="flex items-center gap-2 font-bold"><Thermometer size={16} /> Temp (°C)</Label><Input value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} placeholder="36.5" required className="h-14 rounded-xl" /></div>
-                    <div className="space-y-2"><Label className="flex items-center gap-2 font-bold"><Activity size={16} /> Tension (BP)</Label><Input value={vitals.bp} onChange={e => setVitals({...vitals, bp: e.target.value})} placeholder="120/80" required className="h-14 rounded-xl" /></div>
-                    <div className="space-y-2"><Label className="flex items-center gap-2 font-bold"><Heart size={16} /> Pouls (HR)</Label><Input value={vitals.hr} onChange={e => setVitals({...vitals, hr: e.target.value})} placeholder="72" required className="h-14 rounded-xl" /></div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2 font-bold"><Thermometer size={16} /> Temp (°C)</Label>
+                      <Input 
+                        value={vitals.temp} 
+                        onChange={e => setVitals({...vitals, temp: e.target.value})} 
+                        placeholder="36.5" 
+                        required 
+                        className={`h-14 rounded-xl border-2 transition-colors ${
+                          vitals.temp && (parseFloat(vitals.temp) < 36.0 || parseFloat(vitals.temp) >= 38.0) 
+                            ? 'border-red-300 focus-visible:ring-red-400 bg-red-50/30' 
+                            : vitals.temp && (parseFloat(vitals.temp) >= 37.5) 
+                              ? 'border-amber-300 focus-visible:ring-amber-400 bg-amber-50/30' 
+                              : 'border-slate-200'
+                        }`} 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2 font-bold"><Activity size={16} /> Tension (BP)</Label>
+                      <Input 
+                        value={vitals.bp} 
+                        onChange={e => setVitals({...vitals, bp: e.target.value})} 
+                        placeholder="120/80" 
+                        required 
+                        className={`h-14 rounded-xl border-2 transition-colors ${
+                          vitals.bp && !vitals.bp.match(/^\d{2,3}\/\d{2,3}$/)
+                            ? 'border-slate-200'
+                            : vitals.bp && (parseInt(vitals.bp.split('/')[0]) >= 140 || parseInt(vitals.bp.split('/')[1]) >= 90)
+                              ? 'border-red-300 focus-visible:ring-red-400 bg-red-50/30'
+                              : vitals.bp && (parseInt(vitals.bp.split('/')[0]) >= 125 || parseInt(vitals.bp.split('/')[1]) >= 85)
+                                ? 'border-amber-300 focus-visible:ring-amber-400 bg-amber-50/30'
+                                : 'border-slate-200'
+                        }`} 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2 font-bold"><Heart size={16} /> Pouls (HR)</Label>
+                      <Input 
+                        value={vitals.hr} 
+                        onChange={e => setVitals({...vitals, hr: e.target.value})} 
+                        placeholder="72" 
+                        required 
+                        className={`h-14 rounded-xl border-2 transition-colors ${
+                          vitals.hr && (parseInt(vitals.hr) < 60 || parseInt(vitals.hr) > 100) 
+                            ? 'border-red-300 focus-visible:ring-red-400 bg-red-50/30' 
+                            : 'border-slate-200'
+                        }`} 
+                      />
+                    </div>
+                    
                     <div className="space-y-2 md:col-span-2"><Label className="flex items-center gap-2 font-bold"><MessageCircle size={16} /> Observations</Label><Textarea value={vitals.concerns} onChange={e => setVitals({...vitals, concerns: e.target.value})} placeholder="Notes cliniques..." required className="rounded-xl min-h-[100px]" /></div>
                     <Button className="md:col-span-2 h-16 rounded-2xl bg-emerald-600 text-white font-black text-xl">Transmettre au Docteur</Button>
                   </form>
